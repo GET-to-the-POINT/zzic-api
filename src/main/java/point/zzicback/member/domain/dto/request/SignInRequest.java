@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotBlank;
 import point.zzicback.member.domain.dto.SignInCommand;
 
 @Schema(description = "사용자 로그인 요청 DTO")
-@PasswordOrAnonymousValid
 public record SignInRequest(
 
         @Schema(description = "사용자 이메일", example = "user@example.com")
