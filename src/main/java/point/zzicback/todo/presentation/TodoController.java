@@ -119,7 +119,7 @@ public class TodoController {
     public void modify(
             @AuthenticationPrincipal MemberPrincipal principal,
             @PathVariable Long id,
-            @RequestBody UpdateTodoRequest updateTodoRequest) {
+            @Valid @RequestBody UpdateTodoRequest updateTodoRequest) {
         Todo todo = todoMapper.toTodo(updateTodoRequest, id);
         todo.setId(id);
         this.todoService.updateTodo(principal.id(), todo);
