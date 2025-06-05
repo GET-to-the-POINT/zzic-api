@@ -1,4 +1,4 @@
-package point.zzicback.challenge.application.dto.request;
+package point.zzicback.challenge.application.dto.command;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

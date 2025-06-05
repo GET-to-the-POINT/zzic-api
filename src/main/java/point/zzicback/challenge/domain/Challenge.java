@@ -1,8 +1,13 @@
 package point.zzicback.challenge.domain;
 
 import jakarta.persistence.*;
-import lombok.*;
-import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -14,24 +19,14 @@ public class Challenge {
 
     private String title;
     private String description;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "challenge", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<ChallengeParticipation> participations = new ArrayList<>();
 
     @Builder
     public Challenge(String title, String description) {
         this.title = title;
         this.description = description;
-    }
-
-    @PrePersist
-    protected void onPrePersist() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onPreUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 
     public void update(String title, String description) {

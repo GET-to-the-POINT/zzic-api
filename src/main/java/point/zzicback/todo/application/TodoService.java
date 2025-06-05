@@ -39,20 +39,20 @@ public class TodoService {
     Set<Long> todoIds = todoPage.stream().map(Todo::getId).collect(Collectors.toSet());
 
     // 챌린지 참여만 했고 아직 인증하지 않은 경우도 done=false로 추가
-    if (!query.done()) {
-      List<ChallengeParticipation> participations = participationService.findByMemberId(query.memberId());
-      for (ChallengeParticipation participation : participations) {
-        // participation.getTodo() == null이고, todoResponses에 없는 경우만 추가
-        if (participation.getTodo() == null && !todoIds.contains(participation.getId())) {
-          todoResponses.add(new TodoResponse(
-            participation.getId(),
-            participation.getChallenge().getTitle(),
-            "챌린지: " + participation.getChallenge().getDescription(),
-            false
-          ));
-        }
-      }
-    }
+//    if (!query.done()) {
+//      List<ChallengeParticipation> participations = participationService.findByMemberId(query.memberId());
+//      for (ChallengeParticipation participation : participations) {
+//        // participation.getTodo() == null이고, todoResponses에 없는 경우만 추가
+//        if (participation.getTodo() == null && !todoIds.contains(participation.getId())) {
+//          todoResponses.add(new TodoResponse(
+//            participation.getId(),
+//            participation.getChallenge().getTitle(),
+//            "챌린지: " + participation.getChallenge().getDescription(),
+//            false
+//          ));
+//        }
+//      }
+//    }
     // 페이징 적용 (메모리 페이징)
     int start = (int) query.pageable().getOffset();
     int end = Math.min((start + query.pageable().getPageSize()), todoResponses.size());

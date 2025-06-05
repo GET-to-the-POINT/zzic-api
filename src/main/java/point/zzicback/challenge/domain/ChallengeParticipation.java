@@ -17,43 +17,16 @@ public class ChallengeParticipation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    private UUID memberId;
-
     @ManyToOne
     @JoinColumn(name = "challenge_id")
     private Challenge challenge;
 
-    @OneToOne(cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "todo_id")
-    private Todo todo;
+    @ManyToOne
+    @JoinColumn(name = "member_id")
+    private Member member;
 
-    private String proofImageUrl;
-    private LocalDateTime participatedAt;
-    private LocalDateTime successAt;
-
-    public ChallengeParticipation(UUID memberId, Challenge challenge) {
-        this.memberId = memberId;
+    public ChallengeParticipation(Challenge challenge, Member member) {
         this.challenge = challenge;
-        this.participatedAt = LocalDateTime.now();
-    }
-
-    public void setProofImageUrl(String url) {
-        this.proofImageUrl = url;
-    }
-
-    public void complete(Member member) {
-        if (todo == null) {
-            this.todo = Todo.builder()
-                    .title(challenge.getTitle())
-                    .description("챌린지 성공: " + challenge.getDescription())
-                    .done(true)
-                    .member(member)
-                    .build();
-            this.successAt = LocalDateTime.now();
-        }
-    }
-
-    public boolean isCompleted() {
-        return todo != null && todo.getDone();
+        this.member = member;
     }
 }
