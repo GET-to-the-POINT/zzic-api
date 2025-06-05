@@ -12,7 +12,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class FileStorageService {
+public class LocalFileStorageRepository {
     private final ResourceLoader resourceLoader;
     private final Path tempDir = Path.of(System.getProperty("java.io.tmpdir"), "zzic-uploads");
 

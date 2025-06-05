@@ -8,7 +8,7 @@ import point.zzicback.challenge.domain.*;
 import point.zzicback.challenge.application.dto.request.ChallengeCreateRequest;
 import point.zzicback.challenge.application.dto.response.ChallengeParticipationResponse;
 import point.zzicback.challenge.application.dto.response.ChallengeResponse;
-import point.zzicback.challenge.infrastructure.FileStorageService;
+import point.zzicback.challenge.infrastructure.LocalFileStorageRepository;
 import point.zzicback.member.domain.Member;
 import point.zzicback.member.domain.MemberRepository;
 
@@ -22,7 +22,7 @@ import java.util.UUID;
 public class ChallengeService {
     private final ChallengeRepository challengeRepository;
     private final ChallengeParticipationRepository participationRepository;
-    private final FileStorageService fileStorageService;
+    private final LocalFileStorageRepository localFileStorageRepository;
     private final MemberRepository memberRepository;
 
     public void createChallenge(ChallengeCreateRequest request) {
@@ -64,8 +64,10 @@ public class ChallengeService {
             throw new IllegalStateException("Challenge already completed");
         }
 
-        String imageUrl = fileStorageService.store(proofImage);
-        participation.setProofImageUrl("/uploads/" + imageUrl);
+        String imagePath = localFileStorageRepository.store(proofImage);
+        String fileName = java.nio.file.Paths.get(imagePath).getFileName().toString();
+        participation.setProofImageUrl("/uploads/" + fileName);
+
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));
         participation.complete(member);

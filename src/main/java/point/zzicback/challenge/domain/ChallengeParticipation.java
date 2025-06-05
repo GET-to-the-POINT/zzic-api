@@ -2,8 +2,10 @@ package point.zzicback.challenge.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
+
 import point.zzicback.todo.domain.Todo;
 import point.zzicback.member.domain.Member;
 
@@ -16,7 +18,7 @@ public class ChallengeParticipation {
     private long id;
 
     private UUID memberId;
-    
+
     @ManyToOne
     @JoinColumn(name = "challenge_id")
     private Challenge challenge;
@@ -24,7 +26,7 @@ public class ChallengeParticipation {
     @OneToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "todo_id")
     private Todo todo;
-    
+
     private String proofImageUrl;
     private LocalDateTime participatedAt;
     private LocalDateTime successAt;
@@ -35,10 +37,10 @@ public class ChallengeParticipation {
         this.participatedAt = LocalDateTime.now();
     }
 
-    public void setProofImageUrl(String url) { 
-        this.proofImageUrl = url; 
+    public void setProofImageUrl(String url) {
+        this.proofImageUrl = url;
     }
-    
+
     public void complete(Member member) {
         if (todo == null) {
             this.todo = Todo.builder()

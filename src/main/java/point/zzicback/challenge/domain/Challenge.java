@@ -15,11 +15,22 @@ public class Challenge {
     private String title;
     private String description;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     @Builder
     public Challenge(String title, String description) {
         this.title = title;
         this.description = description;
-        this.createdAt = LocalDateTime.now();
+    }
+
+    @PrePersist
+    protected void onPrePersist() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onPreUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }
