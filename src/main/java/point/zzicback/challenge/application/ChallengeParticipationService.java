@@ -11,6 +11,7 @@ import point.zzicback.member.domain.Member;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +45,23 @@ public class ChallengeParticipationService {
         participationRepository.delete(participation);
     }
 
+    //챌린지 성공
+    public void completeChallenge(Long challengeId, Member member) {
+        ChallengeParticipation participation = participationRepository
+                .findByMemberAndChallengeId(member, challengeId)
+                .orElseThrow(() -> new IllegalArgumentException("Not participating in this challenge"));
+
+        if (participation.isCompleted()) {
+            throw new IllegalStateException("Challenge already completed");
+        }
+
+        participation.complete(member);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChallengeParticipation> findByMember(Member member) {
+        return participationRepository.findByMember(member);
+    }
 
 //    // 챌린지 인증
 //    public void verifyChallenge(UUID memberId, Long challengeId, MultipartFile proofImage) {
@@ -72,9 +90,4 @@ public class ChallengeParticipationService {
 //                .toList();
 //    }
 //
-//    public List<ChallengeParticipation> findByMemberId(UUID memberId) {
-//        return participationRepository.findByMemberId(memberId);
-//    }
 }
-
-

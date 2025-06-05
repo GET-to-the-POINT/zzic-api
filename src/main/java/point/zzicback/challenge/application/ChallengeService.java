@@ -10,7 +10,7 @@ import point.zzicback.challenge.presentation.dto.response.ChallengeResponse;
 import point.zzicback.challenge.domain.Challenge;
 import point.zzicback.challenge.domain.ChallengeParticipationRepository;
 import point.zzicback.challenge.domain.ChallengeRepository;
-import point.zzicback.challenge.presentation.dto.mapper.ChallengeMapper;
+import point.zzicback.challenge.presentation.mapper.ChallengeMapper;
 import point.zzicback.common.error.EntityNotFoundException;
 
 import java.util.List;
@@ -71,7 +71,7 @@ public class ChallengeService {
         return challenge.getParticipations()
                 .stream()
                 .map(participation ->
-                        new ChallengeParticipantsResponse(participation.getChallenge().getId(), participation.getMember())
+                        new ChallengeParticipantsResponse(participation.getChallenge().getId(), participation.getMember(), participation.getDone())
                 )
                 .collect(Collectors.toList());
     }

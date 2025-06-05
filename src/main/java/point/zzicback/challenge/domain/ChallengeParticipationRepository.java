@@ -10,5 +10,6 @@ import java.util.UUID;
 public interface ChallengeParticipationRepository extends JpaRepository<ChallengeParticipation, Long> {
     Optional<ChallengeParticipation> findByMemberAndChallengeId(Member member, Long challengeId);
     List<ChallengeParticipation> findByMember(Member member);
-    List<ChallengeParticipation> findByChallengeId(Long challengeId); // 특정 챌린지에 참여한 목록 조회
 }
+
+

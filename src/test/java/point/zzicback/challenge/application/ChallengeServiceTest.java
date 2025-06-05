@@ -13,7 +13,7 @@ import point.zzicback.challenge.domain.Challenge;
 import point.zzicback.challenge.domain.ChallengeParticipation;
 import point.zzicback.challenge.domain.ChallengeParticipationRepository;
 import point.zzicback.challenge.domain.ChallengeRepository;
-import point.zzicback.challenge.presentation.dto.mapper.ChallengeMapper;
+import point.zzicback.challenge.presentation.mapper.ChallengeMapper;
 import point.zzicback.challenge.presentation.dto.response.ChallengeParticipantsResponse;
 import point.zzicback.challenge.presentation.dto.response.ChallengeResponse;
 import point.zzicback.member.application.MemberService;
