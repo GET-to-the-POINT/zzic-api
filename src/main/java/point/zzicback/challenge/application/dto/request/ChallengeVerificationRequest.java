@@ -8,7 +8,6 @@ public class ChallengeVerificationRequest {
     @Schema(description = "인증 이미지", type = "string", format = "binary")
     private MultipartFile proofImage;
 
-    // getter/setter 필수!
     public MultipartFile getProofImage() {
         return proofImage;
     }
