@@ -5,16 +5,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import point.zzicback.challenge.application.dto.command.CreateChallengeCommand;
 import point.zzicback.challenge.application.dto.command.UpdateChallengeCommand;
-import point.zzicback.challenge.presentation.dto.response.ChallengeParticipantsResponse;
-import point.zzicback.challenge.presentation.dto.response.ChallengeResponse;
+import point.zzicback.challenge.application.dto.result.*;
+import point.zzicback.challenge.application.mapper.ChallengeApplicationMapper;
 import point.zzicback.challenge.domain.Challenge;
-import point.zzicback.challenge.domain.ChallengeParticipationRepository;
-import point.zzicback.challenge.domain.ChallengeRepository;
-import point.zzicback.challenge.presentation.mapper.ChallengeMapper;
+import point.zzicback.challenge.infrastructure.*;
 import point.zzicback.common.error.EntityNotFoundException;
+import point.zzicback.member.domain.Member;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,7 +21,7 @@ public class ChallengeService {
 
     private final ChallengeRepository challengeRepository;
     private final ChallengeParticipationRepository challengeParticipationRepository;
-    private final ChallengeMapper challengeMapper;
+    private final ChallengeApplicationMapper challengeApplicationMapper;
 
     //챌린지 생성
     public Long createChallenge(CreateChallengeCommand command) {
@@ -36,16 +34,51 @@ public class ChallengeService {
 
     //챌린지 목록 조회
     @Transactional(readOnly = true)
-    public List<ChallengeResponse> getChallenges() {
-        return challengeRepository.findAll().stream()
-                .map(challengeMapper::toResponse)
+    public List<ChallengeDto> getChallenges() {
+        return challengeApplicationMapper.toChallengeDto(challengeRepository.findAll());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChallengeJoinedDto> getChallengesByMember(Member member) {
+        // 1. 모든 챌린지 조회
+        List<Challenge> allChallenges = challengeRepository.findAll();
+
+        // 2. 회원이 참여중인 챌린지 ID 목록 조회
+        List<Long> participatedChallengeIds = challengeParticipationRepository.findByMember(member)
+                .stream()
+                .map(participation -> participation.getChallenge().getId())
+                .toList();
+
+        // 3. 모든 챌린지에 대해 회원 참여 여부를 포함한 응답 생성
+        return allChallenges.stream()
+                .map(challenge -> new ChallengeJoinedDto(
+                        challenge.getId(),
+                        challenge.getTitle(),
+                        challenge.getDescription(),
+                        challenge.getStartDate(),
+                        challenge.getEndDate(),
+                        participatedChallengeIds.contains(challenge.getId())
+                ))
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public Challenge findById(Long challengeId) {
+        return challengeRepository.findById(challengeId)
+                .orElseThrow(() -> new EntityNotFoundException("Challenge", challengeId));
+    }
+
+    public ChallengeDto getChallenge(Long challengeId) {
+        return challengeRepository.findById(challengeId)
+                .map(challengeApplicationMapper::toChallengeDto)
+                .orElseThrow(() -> new EntityNotFoundException("Challenge", challengeId));
+    }
+
 
     //챌린지 업데이트
     public void updateChallenge(Long challengeId, UpdateChallengeCommand command) {
         Challenge challenge = challengeRepository.findById(challengeId)
-                .orElseThrow(() -> new IllegalArgumentException("Challenge not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Challenge", challengeId));
         challenge.update(command.title(), command.description());
         challengeRepository.save(challenge);
     }
@@ -53,26 +86,17 @@ public class ChallengeService {
     //챌린지 삭제
     public void deleteChallenge(Long challengeId) {
         Challenge challenge = challengeRepository.findById(challengeId)
-                .orElseThrow(() -> new IllegalArgumentException("Challenge not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Challenge", challengeId));
         challengeRepository.delete(challenge);
     }
 
-    /**
-     * 특정 챌린지의 참여자 목록을 조회합니다.
-     * @param challengeId 조회할 챌린지 ID
-     * @return 챌린지 정보와 참여자 목록이 포함된 응답 객체
-     * @throws EntityNotFoundException 챌린지가 존재하지 않을 경우
-     */
+    // 모든 챌린지와 각 챌린지별 참여자 목록 조회
     @Transactional(readOnly = true)
-    public List<ChallengeParticipantsResponse> getChallengeParticipants(Long challengeId) {
-        Challenge challenge = challengeRepository.findById(challengeId)
-                .orElseThrow(() -> new EntityNotFoundException("Challenge", challengeId));
+    public List<ChallengeDetailDto> getAllChallengesWithParticipants() {
+        // 챌린지와 참여자 정보를 함께 조회 (N+1 문제 방지)
+        List<Challenge> allChallenges = challengeRepository.findAllWithParticipations();
 
-        return challenge.getParticipations()
-                .stream()
-                .map(participation ->
-                        new ChallengeParticipantsResponse(participation.getChallenge().getId(), participation.getMember(), participation.getDone())
-                )
-                .collect(Collectors.toList());
+        // 매퍼를 통해 엔티티 목록을 응답 객체 목록으로 변환
+        return challengeApplicationMapper.toChallengeDetailDto(allChallenges);
     }
 }

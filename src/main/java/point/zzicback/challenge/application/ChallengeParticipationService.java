@@ -5,89 +5,66 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import point.zzicback.challenge.domain.Challenge;
 import point.zzicback.challenge.domain.ChallengeParticipation;
-import point.zzicback.challenge.domain.ChallengeParticipationRepository;
-import point.zzicback.challenge.domain.ChallengeRepository;
+import point.zzicback.challenge.domain.ChallengeTodo;
+import point.zzicback.challenge.infrastructure.ChallengeParticipationRepository;
+import point.zzicback.challenge.infrastructure.ChallengeTodoRepository;
 import point.zzicback.member.domain.Member;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class ChallengeParticipationService {
     private final ChallengeParticipationRepository participationRepository;
-    private final ChallengeRepository challengeRepository;
+    private final ChallengeTodoRepository challengeTodoRepository;
+    private final ChallengeTodoService challengeTodoService;
+    private final ChallengeService challengeService;
 
-    // create
-    public void joinChallenge(Long challengeId, Member member) {
-        Challenge challenge = challengeRepository.findById(challengeId)
-                .orElseThrow(() -> new IllegalArgumentException("Challenge not found"));
+    // 참여
+    public ChallengeParticipation joinChallenge(Long challengeId, Member member) {
+        Challenge challenge = challengeService.findById(challengeId);
 
-        Optional<ChallengeParticipation> existingParticipation = participationRepository
-                .findByMemberAndChallengeId(member, challengeId);
-
-        if (existingParticipation.isPresent()) {
-            throw new IllegalStateException("Already participating in this challenge");
+        if (participationRepository.existsByMemberAndChallenge_Id(member, challengeId)) {
+            throw new IllegalStateException("이미 참여중인 챌린지입니다.");
         }
 
-        ChallengeParticipation participation = new ChallengeParticipation(challenge, member);
-        participationRepository.save(participation);
+        ChallengeParticipation participation = ChallengeParticipation.builder()
+                .challenge(challenge)
+                .member(member)
+                .build();
+
+        participation = participationRepository.save(participation);
+        challengeTodoService.createChallengeTodo(participation, Challenge.PeriodType.DAILY);
+
+        return participation;
     }
 
     // delete 탈퇴
     public void leaveChallenge(Long challengeId, Member member) {
         ChallengeParticipation participation = participationRepository
-                .findByMemberAndChallengeId(member, challengeId)
-                .orElseThrow(() -> new IllegalArgumentException("Not participating in this challenge"));
+                .findByMemberAndChallenge_Id(member, challengeId)
+                .orElseThrow(() -> new IllegalArgumentException("참여하지 않은 챌린지입니다."));
 
+        // ChallengeTodo 먼저 삭제
+        ChallengeTodo todo = challengeTodoRepository.findByChallengeParticipation(participation)
+                .orElseThrow(() -> new IllegalStateException("챌린지 Todo를 찾을 수 없습니다."));
+        challengeTodoRepository.delete(todo);
+
+        // ChallengeParticipation 삭제
         participationRepository.delete(participation);
     }
 
-    //챌린지 성공
-    public void completeChallenge(Long challengeId, Member member) {
-        ChallengeParticipation participation = participationRepository
-                .findByMemberAndChallengeId(member, challengeId)
-                .orElseThrow(() -> new IllegalArgumentException("Not participating in this challenge"));
-
-        if (participation.isCompleted()) {
-            throw new IllegalStateException("Challenge already completed");
-        }
-
-        participation.complete(member);
+    // 참여자가 챌린지 간격에 의해 해야할 챌린지 투두를 출력
+    public List<ChallengeTodo> getChallengeTodos(Member member) {
+        return participationRepository.findByMember(member)
+                .stream()
+                .map(participation -> challengeTodoRepository.findByChallengeParticipation(participation))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
     }
-
-    @Transactional(readOnly = true)
-    public List<ChallengeParticipation> findByMember(Member member) {
-        return participationRepository.findByMember(member);
-    }
-
-//    // 챌린지 인증
-//    public void verifyChallenge(UUID memberId, Long challengeId, MultipartFile proofImage) {
-//        ChallengeParticipation participation = participationRepository
-//                .findByMemberIdAndChallengeId(memberId, challengeId)
-//                .orElseThrow(() -> new IllegalArgumentException("Not participating in this challenge"));
-//
-//        if (participation.isCompleted()) {
-//            throw new IllegalStateException("Challenge already completed");
-//        }
-//
-//        String imagePath = localFileStorageRepository.store(proofImage);
-//        String fileName = java.nio.file.Paths.get(imagePath).getFileName().toString();
-//        participation.setProofImageUrl("/uploads/" + fileName);
-//
-//        Member member = memberRepository.findById(memberId)
-//                .orElseThrow(() -> new IllegalArgumentException("Member not found"));
-//        participation.complete(member);
-//    }
-//
-//    // 내 챌린지 참여 목록 조회
-//    @Transactional(readOnly = true)
-//    public List<ChallengeParticipationResponse> getMyChallenges(UUID memberId) {
-//        return participationRepository.findByMemberId(memberId).stream()
-//                .map(ChallengeParticipationResponse::from)
-//                .toList();
-//    }
-//
 }
+

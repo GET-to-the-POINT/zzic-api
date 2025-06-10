@@ -2,12 +2,11 @@ package point.zzicback.challenge.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import point.zzicback.member.domain.Member;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
-
-import point.zzicback.todo.domain.Todo;
-import point.zzicback.member.domain.Member;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -15,38 +14,27 @@ import point.zzicback.member.domain.Member;
 public class ChallengeParticipation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
-    @Column(nullable = false)
-    private Boolean done;
-
-    @ManyToOne
-    @JoinColumn(name = "challenge_id")
-    private Challenge challenge;
-
-    @ManyToOne
-    @JoinColumn(name = "member_id")
+    @ManyToOne(fetch = FetchType.LAZY)
     private Member member;
 
-    public ChallengeParticipation(Challenge challenge, Member member) {
-        this.challenge = challenge;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Challenge challenge;
+
+    @OneToMany(mappedBy = "challengeParticipation", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChallengeTodo> challengeTodos = new ArrayList<>();
+
+    private LocalDateTime joinedAt;
+
+    @Builder
+    public ChallengeParticipation(Member member, Challenge challenge) {
         this.member = member;
-        this.done = false;
+        this.challenge = challenge;
     }
 
-    public void setDone(Boolean done) {
-        this.done = done;
-    }
-
-    public void complete(Member member) {
-        if (!this.member.equals(member)) {
-            throw new IllegalArgumentException("Only the participant can complete the challenge");
-        }
-        this.done = true;
-    }
-
-    public boolean isCompleted() {
-        return this.done;
+    @PrePersist
+    private void prePersist() {
+        joinedAt = LocalDateTime.now();
     }
 }
-

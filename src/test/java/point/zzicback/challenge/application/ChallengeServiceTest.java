@@ -1,34 +1,32 @@
 package point.zzicback.challenge.application;
 
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import point.zzicback.challenge.application.dto.command.CreateChallengeCommand;
 import point.zzicback.challenge.application.dto.command.UpdateChallengeCommand;
+import point.zzicback.challenge.application.dto.result.*;
+import point.zzicback.challenge.application.mapper.ChallengeApplicationMapperImpl;
 import point.zzicback.challenge.domain.Challenge;
 import point.zzicback.challenge.domain.ChallengeParticipation;
-import point.zzicback.challenge.domain.ChallengeParticipationRepository;
-import point.zzicback.challenge.domain.ChallengeRepository;
-import point.zzicback.challenge.presentation.mapper.ChallengeMapper;
-import point.zzicback.challenge.presentation.dto.response.ChallengeParticipantsResponse;
-import point.zzicback.challenge.presentation.dto.response.ChallengeResponse;
-import point.zzicback.member.application.MemberService;
-import point.zzicback.member.application.dto.command.CreateMemberCommand;
+import point.zzicback.challenge.infrastructure.*;
+import point.zzicback.common.error.EntityNotFoundException;
 import point.zzicback.member.domain.Member;
 import point.zzicback.member.domain.MemberRepository;
 
 import java.util.List;
-import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 @DataJpaTest
-@Import({ChallengeService.class, ChallengeMapper.class, MemberService.class})
+@Import({
+    ChallengeService.class,
+    ChallengeApplicationMapperImpl.class
+})
 class ChallengeServiceTest {
 
     @Autowired
@@ -44,149 +42,224 @@ class ChallengeServiceTest {
     private MemberRepository memberRepository;
 
     @Autowired
-    private MemberService memberService;
+    private TestEntityManager entityManager;
 
-    private CreateChallengeCommand createCommand;
-    private UpdateChallengeCommand updateCommand;
+    private Member testMember;
     private Challenge testChallenge;
-    private Member member1;
-    private Member member2;
-    private ChallengeParticipation testParticipation1;
-    private ChallengeParticipation testParticipation2;
+    private ChallengeParticipation testParticipation;
 
     @BeforeEach
     void setUp() {
-        // 테스트용 데이터 준비 - ID는 자동 생성되므로 설정 불필요
+        testMember = Member.builder()
+                .email("test@test.com")
+                .password("password")
+                .nickname("tester")
+                .build();
+        memberRepository.save(testMember);
+
         testChallenge = Challenge.builder()
                 .title("테스트 챌린지")
-                .description("테스트 설명")
+                .description("테스트용 챌린지 설명")
                 .build();
+        challengeRepository.save(testChallenge);
 
-        // 테스트용 챌린지 참여 데이터 생성
-        CreateMemberCommand createMemberCommand = new CreateMemberCommand("aa@bb.com", "password", "nickname");
-        member1 = memberService.createMember(createMemberCommand);
-        CreateMemberCommand createMemberCommand2 = new CreateMemberCommand("aa2@bb.com", "password2", "nickname2");
-        member2 = memberService.createMember(createMemberCommand2);
+        testParticipation = ChallengeParticipation.builder()
+                .member(testMember)
+                .challenge(testChallenge)
+                .build();
+        participationRepository.save(testParticipation);
 
-        // 첫 번째 참여자
-        testParticipation1 = new ChallengeParticipation(testChallenge, member1);
-        testChallenge.getParticipations().add(testParticipation1);
-
-        // 두 번째 참여자 (성공한 참여자)
-        testParticipation2 = new ChallengeParticipation(testChallenge, member2);
-        testChallenge.getParticipations().add(testParticipation2);
-
-        testChallenge = challengeRepository.save(testChallenge);
-
-        createCommand = new CreateChallengeCommand("새 챌린지", "새 설명");
-        updateCommand = new UpdateChallengeCommand("수정된 챌린지", "수정된 설명");
+        // 먼저 DB에 반영
+        entityManager.flush();
+        
+        // 그 다음 메모리의 Challenge 객체를 DB와 동기화
+        entityManager.refresh(testChallenge);
     }
 
     @Test
     @DisplayName("챌린지 생성 성공")
     void createChallenge_Success() {
+        // given
+        CreateChallengeCommand command = new CreateChallengeCommand(
+                "새로운 챌린지",
+                "새로운 챌린지 설명"
+        );
+
         // when
-        Long challengeId = challengeService.createChallenge(createCommand);
+        Long challengeId = challengeService.createChallenge(command);
 
         // then
-        Optional<Challenge> foundChallenge = challengeRepository.findById(challengeId);
-        assertThat(foundChallenge).isPresent();
-        assertThat(foundChallenge.get().getTitle()).isEqualTo(createCommand.title());
-        assertThat(foundChallenge.get().getDescription()).isEqualTo(createCommand.description());
+        assertThat(challengeId).isNotNull();
+        Challenge savedChallenge = challengeRepository.findById(challengeId).orElseThrow();
+        assertThat(savedChallenge.getTitle()).isEqualTo("새로운 챌린지");
+        assertThat(savedChallenge.getDescription()).isEqualTo("새로운 챌린지 설명");
     }
 
     @Test
-    @DisplayName("챌린지 목록 조회 성공")
+    @DisplayName("모든 챌린지 목록 조회 성공")
     void getChallenges_Success() {
-        // given
-        // setUp에서 이미 testChallenge가 저장됨
-
         // when
-        List<ChallengeResponse> results = challengeService.getChallenges();
+        List<ChallengeDto> challenges = challengeService.getChallenges();
 
         // then
-        assertThat(results).hasSize(1);
-        assertThat(results.getFirst().title()).isEqualTo(testChallenge.getTitle());
-        assertThat(results.getFirst().description()).isEqualTo(testChallenge.getDescription());
+        assertThat(challenges).hasSize(1);
+        assertThat(challenges.get(0).title()).isEqualTo("테스트 챌린지");
+        assertThat(challenges.get(0).description()).isEqualTo("테스트용 챌린지 설명");
     }
 
     @Test
-    @DisplayName("챌린지 업데이트 성공")
-    void updateChallenge_Success() {
+    @DisplayName("멤버별 챌린지 조회 성공 (참여 여부 포함)")
+    void getChallengesByMember_Success() {
         // given
-        // testChallenge는 setUp에서 이미 저장됨
+        Challenge anotherChallenge = Challenge.builder()
+                .title("다른 챌린지")
+                .description("참여하지 않은 챌린지")
+                .build();
+        challengeRepository.save(anotherChallenge);
 
         // when
-        challengeService.updateChallenge(testChallenge.getId(), updateCommand);
+        List<ChallengeJoinedDto> challenges = challengeService.getChallengesByMember(testMember);
 
         // then
-        Optional<Challenge> updatedChallengeOpt = challengeRepository.findById(testChallenge.getId());
-        assertThat(updatedChallengeOpt).isPresent();
-        Challenge updatedChallenge = updatedChallengeOpt.get();
-        assertThat(updatedChallenge.getTitle()).isEqualTo(updateCommand.title());
-        assertThat(updatedChallenge.getDescription()).isEqualTo(updateCommand.description());
+        assertThat(challenges).hasSize(2);
+        
+        ChallengeJoinedDto participatedChallenge = challenges.stream()
+                .filter(c -> c.title().equals("테스트 챌린지"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(participatedChallenge.participationStatus()).isTrue();
+
+        ChallengeJoinedDto notParticipatedChallenge = challenges.stream()
+                .filter(c -> c.title().equals("다른 챌린지"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(notParticipatedChallenge.participationStatus()).isFalse();
     }
 
-    // 챌린지 삭제 테스트 (필요시 추가)
     @Test
-    @DisplayName("챌린지 삭제 성공")
-    void deleteChallenge_Success() {
-        // given
-        // testChallenge는 setUp에서 이미 저장됨
-        Long challengeIdToDelete = testChallenge.getId();
-
+    @DisplayName("단일 챌린지 조회 성공")
+    void getChallenge_Success() {
         // when
-        challengeService.deleteChallenge(challengeIdToDelete);
+        ChallengeDto challenge = challengeService.getChallenge(testChallenge.getId());
 
         // then
-        Optional<Challenge> deletedChallenge = challengeRepository.findById(challengeIdToDelete);
-        assertThat(deletedChallenge).isNotPresent();
+        assertThat(challenge.id()).isEqualTo(testChallenge.getId());
+        assertThat(challenge.title()).isEqualTo("테스트 챌린지");
+        assertThat(challenge.description()).isEqualTo("테스트용 챌린지 설명");
     }
 
     @Test
-    @DisplayName("챌린지 참여자 목록 조회 성공")
-    void getChallengeParticipants_Success() {
+    @DisplayName("존재하지 않는 챌린지 조회 시 예외 발생")
+    void getChallenge_NotFound() {
         // given
-        // setUp에서 이미 testChallenge와 참여자들이 저장됨
-        Long challengeId = testChallenge.getId();
-
-        // when
-        List<ChallengeParticipantsResponse> response = challengeService.getChallengeParticipants(challengeId);
-
-        // 참여자 정보 확인
-        assertThat(response.getFirst().challengeId()).isEqualTo(challengeId);
-        assertThat(response.getFirst().member().getId()).isEqualTo(testParticipation1.getMember().getId());
-
-        assertThat(response.get(1).challengeId()).isEqualTo(challengeId);
-        assertThat(response.get(1).member().getId()).isEqualTo(testParticipation2.getMember().getId());
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 챌린지의 참여자 목록 조회 시 예외 발생")
-    void getChallengeParticipants_NotFound() {
-        // given
-        Long nonExistingChallengeId = 9999L;
+        Long nonExistentId = 999L;
 
         // when & then
-        assertThatThrownBy(() -> challengeService.getChallengeParticipants(nonExistingChallengeId))
+        assertThatThrownBy(() -> challengeService.getChallenge(nonExistentId))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 
     @Test
-    @DisplayName("참여자가 없는 챌린지의 참여자 목록 조회 시 빈 목록 반환")
-    void getChallengeParticipants_EmptyList() {
+    @DisplayName("챌린지 수정 성공")
+    void updateChallenge_Success() {
         // given
-        // 참여자가 없는 새 챌린지 생성
-        Challenge emptyChallenge = Challenge.builder()
-                .title("참여자 없는 챌린지")
-                .description("아직 아무도 참여하지 않았어요")
-                .build();
-        Challenge savedEmptyChallenge = challengeRepository.save(emptyChallenge);
+        UpdateChallengeCommand command = new UpdateChallengeCommand(
+                "수정된 제목",
+                "수정된 설명"
+        );
 
         // when
-        List<ChallengeParticipantsResponse> response = challengeService.getChallengeParticipants(savedEmptyChallenge.getId());
+        challengeService.updateChallenge(testChallenge.getId(), command);
 
         // then
-        assertThat(response).isEmpty();
+        Challenge updatedChallenge = challengeRepository.findById(testChallenge.getId()).orElseThrow();
+        assertThat(updatedChallenge.getTitle()).isEqualTo("수정된 제목");
+        assertThat(updatedChallenge.getDescription()).isEqualTo("수정된 설명");
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 챌린지 수정 시 예외 발생")
+    void updateChallenge_NotFound() {
+        // given
+        Long nonExistentId = 999L;
+        UpdateChallengeCommand command = new UpdateChallengeCommand(
+                "수정된 제목",
+                "수정된 설명"
+        );
+
+        // when & then
+        assertThatThrownBy(() -> challengeService.updateChallenge(nonExistentId, command))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("챌린지 삭제 성공")
+    void deleteChallenge_Success() {
+        // when
+        challengeService.deleteChallenge(testChallenge.getId());
+
+        // then
+        assertThat(challengeRepository.findById(testChallenge.getId())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 챌린지 삭제 시 예외 발생")
+    void deleteChallenge_NotFound() {
+        // given
+        Long nonExistentId = 999L;
+
+        // when & then
+        assertThatThrownBy(() -> challengeService.deleteChallenge(nonExistentId))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("참여자 포함 모든 챌린지 조회 성공")
+    void getAllChallengesWithParticipants_Success() {
+ 
+        // Debug: setUp 후에 다시 데이터를 확인
+        assertThat(testChallenge).isNotNull();
+        assertThat(testParticipation).isNotNull();
+        
+        // Debug: 먼저 일반 조회로 데이터가 있는지 확인
+        List<Challenge> allChallenges = challengeRepository.findAll();
+        assertThat(allChallenges).hasSize(1); // 이 라인에서 실패하면 데이터가 없음
+        
+        // Debug: 참여자 데이터 확인
+        List<ChallengeParticipation> allParticipations = participationRepository.findAll();
+        assertThat(allParticipations).hasSize(1); // 이 라인에서 실패하면 참여자 데이터가 없음
+        
+        // when
+        List<ChallengeDetailDto> challenges = challengeService.getAllChallengesWithParticipants();
+
+        // then
+        assertThat(challenges).hasSize(1);
+        ChallengeDetailDto challenge = challenges.get(0);
+        assertThat(challenge.title()).isEqualTo("테스트 챌린지");
+        assertThat(challenge.participants()).hasSize(1);
+        assertThat(challenge.participants().get(0).nickname()).isEqualTo("tester");
+    }
+
+    @Test
+    @DisplayName("findById로 챌린지 조회 성공")
+    void findById_Success() {
+        // when
+        Challenge challenge = challengeService.findById(testChallenge.getId());
+
+        // then
+        assertThat(challenge.getId()).isEqualTo(testChallenge.getId());
+        assertThat(challenge.getTitle()).isEqualTo("테스트 챌린지");
+        assertThat(challenge.getDescription()).isEqualTo("테스트용 챌린지 설명");
+    }
+
+    @Test
+    @DisplayName("findById로 존재하지 않는 챌린지 조회 시 예외 발생")
+    void findById_NotFound() {
+        // given
+        Long nonExistentId = 999L;
+
+        // when & then
+        assertThatThrownBy(() -> challengeService.findById(nonExistentId))
+                .isInstanceOf(EntityNotFoundException.class);
     }
 }

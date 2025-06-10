@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,8 +21,18 @@ public class Challenge {
     private String title;
     private String description;
 
+    private LocalDate startDate;
+    private LocalDate endDate;
+
+    @Enumerated(EnumType.STRING)
+    private PeriodType periodType;
+
+    public enum PeriodType {
+        DAILY, WEEKLY, MONTHLY
+    }
+
     @OneToMany(mappedBy = "challenge", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<ChallengeParticipation> participations = new ArrayList<>();
+    private List<ChallengeParticipation> participations = new ArrayList<>();
 
     @Builder
     public Challenge(String title, String description) {

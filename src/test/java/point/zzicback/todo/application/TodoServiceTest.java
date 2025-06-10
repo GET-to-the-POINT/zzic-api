@@ -11,9 +11,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import point.zzicback.challenge.application.ChallengeParticipationService;
+import point.zzicback.challenge.application.ChallengeTodoService;
+import point.zzicback.challenge.application.ChallengeService;
+import point.zzicback.challenge.application.mapper.ChallengeApplicationMapperImpl;
 import point.zzicback.challenge.domain.Challenge;
 import point.zzicback.challenge.domain.ChallengeParticipation;
-import point.zzicback.challenge.domain.ChallengeRepository;
+import point.zzicback.challenge.infrastructure.ChallengeRepository;
 import point.zzicback.common.error.EntityNotFoundException;
 import point.zzicback.member.application.MemberService;
 import point.zzicback.member.application.dto.command.CreateMemberCommand;
@@ -22,8 +25,8 @@ import point.zzicback.todo.application.dto.command.CreateTodoCommand;
 import point.zzicback.todo.application.dto.command.UpdateTodoCommand;
 import point.zzicback.todo.application.dto.query.TodoListQuery;
 import point.zzicback.todo.application.dto.query.TodoQuery;
-import point.zzicback.todo.application.dto.response.TodoResponse;
-import point.zzicback.todo.application.mapper.TodoApplicationMapperImpl;
+import point.zzicback.todo.application.dto.result.TodoResult;
+// import point.zzicback.todo.application.mapper.TodoApplicationMapperImpl;
 import point.zzicback.todo.domain.Todo;
 import point.zzicback.todo.domain.TodoRepository;
 
@@ -37,7 +40,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
     TodoService.class,
     MemberService.class,
     ChallengeParticipationService.class,
-    TodoApplicationMapperImpl.class  // MapStruct가 생성한 구현체
+    ChallengeTodoService.class,
+    ChallengeService.class,
+    ChallengeApplicationMapperImpl.class
+    // TodoApplicationMapperImpl.class  // MapStruct 구현체 제거
 })
 class TodoServiceTest {
 
@@ -88,25 +94,21 @@ class TodoServiceTest {
     }
 
     @Test
-    @DisplayName("Todo 목록 조회 성공 (일반 Todo + 챌린지)")
+    @DisplayName("Todo 목록 조회 성공 (일반 Todo)")
     void getTodoList_Success() {
         // given
         Pageable pageable = PageRequest.of(0, 10, Sort.by("id").descending());
         TodoListQuery query = TodoListQuery.of(testMember.getId(), false, pageable);
 
         // when
-        Page<TodoResponse> result = todoService.getTodoList(query);
+        Page<TodoResult> result = todoService.getTodoList(query);
 
         // then
-        assertThat(result.getContent()).hasSize(2); // 일반 Todo 1개 + 참여중인 챌린지 1개
-        assertThat(result.getContent())
-                .anySatisfy(todo -> {
+        assertThat(result.getContent()).hasSize(1); // 일반 Todo 1개
+        assertThat(result.getContent().get(0))
+                .satisfies(todo -> {
                     assertThat(todo.title()).isEqualTo("테스트 할일");
-                    assertThat(todo.done()).isFalse();
-                })
-                .anySatisfy(todo -> {
-                    assertThat(todo.title()).isEqualTo("테스트 챌린지");
-                    assertThat(todo.description()).contains("챌린지");
+                    assertThat(todo.description()).isEqualTo("테스트 설명");
                     assertThat(todo.done()).isFalse();
                 });
     }
@@ -183,28 +185,5 @@ class TodoServiceTest {
 
         // then
         assertThat(todoRepository.findById(testTodo.getId())).isEmpty();
-    }
-
-    @Test
-    @DisplayName("완료된 Todo 목록 조회")
-    void getTodoList_CompletedTodos() {
-        // given
-        // Todo를 완료 상태로 변경
-        testTodo.setDone(true);
-        todoRepository.save(testTodo);
-
-        // 챌린지도 완료 상태로 변경
-        participationService.completeChallenge(testChallenge.getId(), testMember);
-
-        Pageable pageable = PageRequest.of(0, 10, Sort.by("id").descending());
-        TodoListQuery query = TodoListQuery.of(testMember.getId(), true, pageable);
-
-        // when
-        Page<TodoResponse> result = todoService.getTodoList(query);
-
-        // then
-        assertThat(result.getContent()).hasSize(2); // 완료된 Todo 1개 + 완료된 챌린지 1개
-        assertThat(result.getContent())
-                .allSatisfy(todo -> assertThat(todo.done()).isTrue());
     }
 }
