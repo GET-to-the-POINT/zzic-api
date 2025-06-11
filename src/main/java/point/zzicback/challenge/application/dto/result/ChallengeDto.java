@@ -1,5 +1,6 @@
 package point.zzicback.challenge.application.dto.result;
 
+import point.zzicback.challenge.domain.PeriodType;
 import java.time.LocalDate;
 
 public record ChallengeDto(
@@ -7,6 +8,7 @@ public record ChallengeDto(
         String title,
         String description,
         LocalDate startDate,
-        LocalDate endDate
+        LocalDate endDate,
+        PeriodType periodType
 ) {
 }

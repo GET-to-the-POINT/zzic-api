@@ -8,10 +8,12 @@ import point.zzicback.challenge.application.dto.command.UpdateChallengeCommand;
 import point.zzicback.challenge.application.dto.result.*;
 import point.zzicback.challenge.application.mapper.ChallengeApplicationMapper;
 import point.zzicback.challenge.domain.Challenge;
+import point.zzicback.challenge.domain.PeriodType;
 import point.zzicback.challenge.infrastructure.*;
 import point.zzicback.common.error.EntityNotFoundException;
 import point.zzicback.member.domain.Member;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -25,11 +27,25 @@ public class ChallengeService {
 
     //챌린지 생성
     public Long createChallenge(CreateChallengeCommand command) {
+        LocalDate startDate = LocalDate.now();
+        LocalDate endDate = calculateEndDate(startDate, command.periodType());
+        
         Challenge challenge = Challenge.builder()
                 .title(command.title())
                 .description(command.description())
+                .periodType(command.periodType())
+                .startDate(startDate)
+                .endDate(endDate)
                 .build();
         return challengeRepository.save(challenge).getId();
+    }
+    
+    private LocalDate calculateEndDate(LocalDate startDate, PeriodType periodType) {
+        return switch (periodType) {
+            case DAILY -> startDate.plusDays(1);
+            case WEEKLY -> startDate.plusWeeks(1);
+            case MONTHLY -> startDate.plusMonths(1);
+        };
     }
 
     //챌린지 목록 조회
@@ -57,6 +73,7 @@ public class ChallengeService {
                         challenge.getDescription(),
                         challenge.getStartDate(),
                         challenge.getEndDate(),
+                        challenge.getPeriodType(),
                         participatedChallengeIds.contains(challenge.getId())
                 ))
                 .toList();
@@ -79,7 +96,7 @@ public class ChallengeService {
     public void updateChallenge(Long challengeId, UpdateChallengeCommand command) {
         Challenge challenge = challengeRepository.findById(challengeId)
                 .orElseThrow(() -> new EntityNotFoundException("Challenge", challengeId));
-        challenge.update(command.title(), command.description());
+        challenge.update(command.title(), command.description(), command.periodType());
         challengeRepository.save(challenge);
     }
 

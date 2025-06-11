@@ -75,12 +75,15 @@ public class ChallengeTodo {
         return this.done;
     }
 
-    public boolean isInPeriod(Challenge.PeriodType periodType, LocalDate date) {
+    public PeriodType.PeriodRange getPeriod() {
+        return challengeParticipation.getChallenge().getPeriodType().calculatePeriod(targetDate);
+    }
+
+    public boolean isInPeriod(PeriodType periodType, LocalDate date) {
         switch (periodType) {
             case DAILY:
                 return targetDate.equals(date);
             case WEEKLY:
-                // 주의 시작일(월요일)과 종료일(일요일) 계산
                 LocalDate weekStart = targetDate.with(previousOrSame(MONDAY));
                 LocalDate weekEnd = weekStart.with(nextOrSame(SUNDAY));
                 return !date.isBefore(weekStart) && !date.isAfter(weekEnd);

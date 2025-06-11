@@ -27,21 +27,21 @@ public class Challenge {
     @Enumerated(EnumType.STRING)
     private PeriodType periodType;
 
-    public enum PeriodType {
-        DAILY, WEEKLY, MONTHLY
-    }
-
     @OneToMany(mappedBy = "challenge", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChallengeParticipation> participations = new ArrayList<>();
 
     @Builder
-    public Challenge(String title, String description) {
+    public Challenge(String title, String description, PeriodType periodType, LocalDate startDate, LocalDate endDate) {
         this.title = title;
         this.description = description;
+        this.periodType = periodType;
+        this.startDate = startDate;
+        this.endDate = endDate;
     }
 
-    public void update(String title, String description) {
+    public void update(String title, String description, PeriodType periodType) {
         this.title = title;
         this.description = description;
+        this.periodType = periodType;
     }
 }

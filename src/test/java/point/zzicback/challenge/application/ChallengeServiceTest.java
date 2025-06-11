@@ -13,11 +13,13 @@ import point.zzicback.challenge.application.dto.result.*;
 import point.zzicback.challenge.application.mapper.ChallengeApplicationMapperImpl;
 import point.zzicback.challenge.domain.Challenge;
 import point.zzicback.challenge.domain.ChallengeParticipation;
+import point.zzicback.challenge.domain.PeriodType;
 import point.zzicback.challenge.infrastructure.*;
 import point.zzicback.common.error.EntityNotFoundException;
 import point.zzicback.member.domain.Member;
 import point.zzicback.member.domain.MemberRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
@@ -60,6 +62,9 @@ class ChallengeServiceTest {
         testChallenge = Challenge.builder()
                 .title("테스트 챌린지")
                 .description("테스트용 챌린지 설명")
+                .periodType(PeriodType.DAILY)
+                .startDate(LocalDate.now())
+                .endDate(LocalDate.now().plusDays(30))
                 .build();
         challengeRepository.save(testChallenge);
 
@@ -82,7 +87,8 @@ class ChallengeServiceTest {
         // given
         CreateChallengeCommand command = new CreateChallengeCommand(
                 "새로운 챌린지",
-                "새로운 챌린지 설명"
+                "새로운 챌린지 설명",
+                PeriodType.WEEKLY
         );
 
         // when
@@ -93,6 +99,7 @@ class ChallengeServiceTest {
         Challenge savedChallenge = challengeRepository.findById(challengeId).orElseThrow();
         assertThat(savedChallenge.getTitle()).isEqualTo("새로운 챌린지");
         assertThat(savedChallenge.getDescription()).isEqualTo("새로운 챌린지 설명");
+        assertThat(savedChallenge.getPeriodType()).isEqualTo(PeriodType.WEEKLY);
     }
 
     @Test
@@ -114,6 +121,9 @@ class ChallengeServiceTest {
         Challenge anotherChallenge = Challenge.builder()
                 .title("다른 챌린지")
                 .description("참여하지 않은 챌린지")
+                .periodType(PeriodType.WEEKLY)
+                .startDate(LocalDate.now())
+                .endDate(LocalDate.now().plusDays(30))
                 .build();
         challengeRepository.save(anotherChallenge);
 
@@ -165,7 +175,8 @@ class ChallengeServiceTest {
         // given
         UpdateChallengeCommand command = new UpdateChallengeCommand(
                 "수정된 제목",
-                "수정된 설명"
+                "수정된 설명",
+                PeriodType.MONTHLY
         );
 
         // when
@@ -175,6 +186,7 @@ class ChallengeServiceTest {
         Challenge updatedChallenge = challengeRepository.findById(testChallenge.getId()).orElseThrow();
         assertThat(updatedChallenge.getTitle()).isEqualTo("수정된 제목");
         assertThat(updatedChallenge.getDescription()).isEqualTo("수정된 설명");
+        assertThat(updatedChallenge.getPeriodType()).isEqualTo(PeriodType.MONTHLY);
     }
 
     @Test
@@ -184,7 +196,8 @@ class ChallengeServiceTest {
         Long nonExistentId = 999L;
         UpdateChallengeCommand command = new UpdateChallengeCommand(
                 "수정된 제목",
-                "수정된 설명"
+                "수정된 설명",
+                PeriodType.WEEKLY
         );
 
         // when & then

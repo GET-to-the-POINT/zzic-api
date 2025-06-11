@@ -16,6 +16,7 @@ import point.zzicback.challenge.application.ChallengeService;
 import point.zzicback.challenge.application.mapper.ChallengeApplicationMapperImpl;
 import point.zzicback.challenge.domain.Challenge;
 import point.zzicback.challenge.domain.ChallengeParticipation;
+import point.zzicback.challenge.domain.PeriodType;
 import point.zzicback.challenge.infrastructure.ChallengeRepository;
 import point.zzicback.common.error.EntityNotFoundException;
 import point.zzicback.member.application.MemberService;
@@ -30,6 +31,7 @@ import point.zzicback.todo.application.dto.result.TodoResult;
 import point.zzicback.todo.domain.Todo;
 import point.zzicback.todo.domain.TodoRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -86,6 +88,9 @@ class TodoServiceTest {
         testChallenge = Challenge.builder()
                 .title("테스트 챌린지")
                 .description("챌린지 설명")
+                .periodType(PeriodType.DAILY)
+                .startDate(LocalDate.now())
+                .endDate(LocalDate.now().plusDays(30))
                 .build();
         challengeRepository.save(testChallenge);
 
