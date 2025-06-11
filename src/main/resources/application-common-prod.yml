@@ -11,16 +11,16 @@ jwt:
     expiration: 60
     cookie:
       name: access-token
-      domain: xiyo.dev
+      domain: zzic.xiyo.dev
       path: /
       secure: true
       httpOnly: false
-      sameSite: None
+      sameSite: Lax
   refresh-token:
     expiration: 31536000
     cookie:
       name: refresh-token
-      domain: xiyo.dev
+      domain: zzic.xiyo.dev
       path: /
       secure: true
       httpOnly: true
