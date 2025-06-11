@@ -41,7 +41,7 @@ public class ChallengeTodoController {
         Member member = memberService.findVerifiedMember(principal.id());
         return challengeTodoService.getUncompletedChallengeTodos(member);
     }
-    
+
     @Operation(summary = "챌린지 완료 처리", description = "특정 챌린지를 완료 처리합니다.")
     @ApiResponse(responseCode = "200", description = "챌린지 완료 처리 성공")
     @ApiResponse(responseCode = "404", description = "챌린지 참여 정보를 찾을 수 없음")

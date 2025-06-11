@@ -25,7 +25,7 @@ public class ChallengeTodoService {
     private final ChallengeTodoRepository challengeTodoRepository;
     private final ChallengeParticipationRepository participationRepository;
     private final ChallengeService challengeService;
-
+    
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -68,7 +68,7 @@ public class ChallengeTodoService {
                 .map(todo -> todo.isInPeriod(cp.getChallenge().getPeriodType(), date) && todo.isCompleted())
                 .orElse(false);
     }
-
+    
     // 챌린지 참여자가 해야 할 챌린지 투두를 모두 조회
     @Transactional(readOnly = true)
     public List<ChallengeTodoDto> getAllChallengeTodos(Member member) {
@@ -78,7 +78,7 @@ public class ChallengeTodoService {
                 .flatMap(this::createChallengeTodoStream)
                 .toList();
     }
-
+ 
     // 챌린지 참여자가 완료되지 않은 챌린지 투두를 모두 조회
     @Transactional(readOnly = true)
     public List<ChallengeTodoDto> getUncompletedChallengeTodos(Member member) {
@@ -131,12 +131,12 @@ public class ChallengeTodoService {
         if (participation == null) {
             throw new IllegalArgumentException("ChallengeParticipation cannot be null");
         }
-
+        
         Challenge challenge = participation.getChallenge();
         if (challenge == null) {
             throw new IllegalArgumentException("Challenge cannot be null");
         }
-
+        
         LocalDate targetDate = calculateTargetDate(challenge.getPeriodType());
 
         return ChallengeTodo.builder()
@@ -164,7 +164,7 @@ public class ChallengeTodoService {
         ChallengeParticipation participation = participationRepository
                 .findByMemberAndChallenge_Id(member, challengeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 챌린지에 참여하지 않았습니다."));
-
+        
         completeChallenge(participation, currentDate);
     }
 }
