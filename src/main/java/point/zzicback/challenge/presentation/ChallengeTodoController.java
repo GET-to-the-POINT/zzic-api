@@ -42,6 +42,14 @@ public class ChallengeTodoController {
         return challengeTodoService.getUncompletedChallengeTodos(member);
     }
 
+    @Operation(summary = "완료된 챌린지 투두 조회", description = "사용자의 완료된 챌린지 투두만 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "완료된 챌린지 투두 목록 조회 성공")
+    @GetMapping("/completed")
+    public List<ChallengeTodoDto> getCompletedChallengeTodos(@AuthenticationPrincipal MemberPrincipal principal) {
+        Member member = memberService.findVerifiedMember(principal.id());
+        return challengeTodoService.getCompletedChallengeTodos(member);
+    }
+
     @Operation(summary = "챌린지 완료 처리", description = "특정 챌린지를 완료 처리합니다.")
     @ApiResponse(responseCode = "200", description = "챌린지 완료 처리 성공")
     @ApiResponse(responseCode = "404", description = "챌린지 참여 정보를 찾을 수 없음")

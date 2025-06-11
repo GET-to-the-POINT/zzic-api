@@ -13,8 +13,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static java.time.temporal.TemporalAdjusters.previousOrSame;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -38,16 +36,10 @@ public class ChallengeParticipationService {
 
         participation = participationRepository.save(participation);
         
-        // ChallengeTodo 직접 생성 - PeriodType에 따라 적절한 targetDate 계산
-        PeriodType periodType = challenge.getPeriodType();
-        if (periodType == null) {
-            throw new IllegalStateException("챌린지 주기 타입이 설정되지 않았습니다");
-        }
-        
-        LocalDate targetDate = calculateTargetDate(periodType);
+        // ChallengeTodo 직접 생성
         ChallengeTodo challengeTodo = ChallengeTodo.builder()
                 .challengeParticipation(participation)
-                .targetDate(targetDate)
+                .targetDate(LocalDate.now())
                 .build();
         challengeTodoRepository.save(challengeTodo);
 
@@ -67,22 +59,6 @@ public class ChallengeParticipationService {
 
         // ChallengeParticipation 삭제
         participationRepository.delete(participation);
-    }
-
-    private LocalDate calculateTargetDate(PeriodType periodType) {
-        if (periodType == null) {
-            throw new IllegalStateException("주기 타입이 설정되지 않았습니다");
-        }
-        
-        LocalDate today = LocalDate.now();
-        return switch (periodType) {
-            case DAILY -> today;
-            case WEEKLY -> {
-                LocalDate monday = today.with(previousOrSame(java.time.DayOfWeek.MONDAY));
-                yield monday;
-            }
-            case MONTHLY -> today.withDayOfMonth(1);
-        };
     }
 
     // 참여자가 챌린지 간격에 의해 해야할 챌린지 투두를 출력

@@ -74,29 +74,7 @@ class ChallengeTodoServiceTest {
                 .member(testMember)
                 .challenge(challenge)
                 .build();
-        participation = participationRepository.save(participation);
-        
-        // ChallengeTodo도 함께 생성 (실제 서비스 로직과 동일하게)
-        LocalDate targetDate = calculateTargetDate(periodType);
-        ChallengeTodo challengeTodo = ChallengeTodo.builder()
-                .challengeParticipation(participation)
-                .targetDate(targetDate)
-                .build();
-        challengeTodoRepository.save(challengeTodo);
-        
-        return participation;
-    }
-
-    private LocalDate calculateTargetDate(PeriodType periodType) {
-        LocalDate today = LocalDate.now();
-        return switch (periodType) {
-            case DAILY -> today;
-            case WEEKLY -> {
-                LocalDate monday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-                yield monday;
-            }
-            case MONTHLY -> today.withDayOfMonth(1);
-        };
+        return participationRepository.save(participation);
     }
 
     private void completeChallengeTodo(ChallengeParticipation participation) {
@@ -112,13 +90,10 @@ class ChallengeTodoServiceTest {
         challengeTodoService.completeChallenge(participation, LocalDate.now());
 
         var todos = challengeTodoRepository.findAll();
-        assertThat(todos).hasSize(3); // 3개의 참여(DAILY, WEEKLY, MONTHLY)
+        assertThat(todos).hasSize(1); // 완료된 Todo 1개만 저장됨
         
-        // 완료된 todo 찾기
-        var completedTodo = todos.stream()
-                .filter(todo -> todo.getChallengeParticipation().getId().equals(participation.getId()))
-                .findFirst()
-                .orElseThrow();
+        var completedTodo = todos.get(0);
+        assertThat(completedTodo.getChallengeParticipation().getId()).isEqualTo(participation.getId());
         assertThat(completedTodo.getDone()).isTrue();
     }
 
@@ -131,8 +106,7 @@ class ChallengeTodoServiceTest {
         challengeTodoService.cancelCompleteChallenge(participation.getChallenge().getId(), testMember, LocalDate.now());
 
         var todos = challengeTodoRepository.findAll();
-        assertThat(todos).hasSize(3); // 3개의 참여(DAILY, WEEKLY, MONTHLY)에서 모든 todo가 유지됨
-        assertThat(todos.get(0).getDone()).isFalse(); // 첫 번째 todo가 취소되어 done이 false
+        assertThat(todos).isEmpty(); // 완료 취소 시 Todo 삭제됨
     }
 
     @Test
@@ -144,7 +118,7 @@ class ChallengeTodoServiceTest {
         assertThat(allTodos).hasSize(3);
         assertThat(uncompletedTodos).hasSize(3);
         assertThat(allTodos.stream().allMatch(dto -> !dto.done())).isTrue();
-        assertThat(allTodos.stream().allMatch(dto -> !dto.isPersisted())).isTrue();
+        assertThat(allTodos.stream().allMatch(dto -> !dto.isPersisted())).isTrue(); // 가상 Todo이므로 isPersisted = false
 
         var periodTypes = allTodos.stream().map(ChallengeTodoDto::periodType).toList();
         assertThat(periodTypes).containsExactlyInAnyOrder(PeriodType.DAILY, PeriodType.WEEKLY, PeriodType.MONTHLY);
@@ -184,10 +158,11 @@ class ChallengeTodoServiceTest {
         assertThat(completedTodos).hasSize(1);
         assertThat(incompleteTodos).hasSize(2);
         assertThat(completedTodos.get(0).periodType()).isEqualTo(PeriodType.DAILY);
-        assertThat(completedTodos.get(0).isPersisted()).isTrue();
+        assertThat(completedTodos.get(0).isPersisted()).isTrue(); // 완료된 Todo는 DB에 저장됨
 
         var incompletePeriodTypes = incompleteTodos.stream().map(ChallengeTodoDto::periodType).toList();
         assertThat(incompletePeriodTypes).containsExactlyInAnyOrder(PeriodType.WEEKLY, PeriodType.MONTHLY);
+        assertThat(incompleteTodos.stream().allMatch(dto -> !dto.isPersisted())).isTrue(); // 미완료 Todo는 가상 Todo
     }
 
     @Test

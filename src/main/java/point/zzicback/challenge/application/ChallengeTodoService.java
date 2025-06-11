@@ -89,6 +89,16 @@ public class ChallengeTodoService {
                 .toList();
     }
 
+    // 챌린지 참여자가 완료된 챌린지 투두를 모두 조회
+    @Transactional(readOnly = true)
+    public List<ChallengeTodoDto> getCompletedChallengeTodos(Member member) {
+        List<ChallengeParticipation> participations = participationRepository.findByMember(member);
+
+        return participations.stream()
+                .flatMap(this::createCompletedChallengeTodoStream)
+                .toList();
+    }
+
     private Stream<ChallengeTodoDto> createChallengeTodoStream(ChallengeParticipation participation) {
         try {
             return challengeTodoRepository.findByChallengeParticipation(participation)
@@ -122,6 +132,19 @@ public class ChallengeTodoService {
         } catch (Exception e) {
             // 에러 로깅 및 기본값 반환으로 안정성 확보
             System.err.println("Error creating UncompletedChallengeTodoStream for participation: " + participation.getId() + ", Error: " + e.getMessage());
+            return Stream.empty();
+        }
+    }
+
+    private Stream<ChallengeTodoDto> createCompletedChallengeTodoStream(ChallengeParticipation participation) {
+        try {
+            return challengeTodoRepository.findByChallengeParticipation(participation)
+                    .filter(ChallengeTodo::isCompleted)
+                    .map(ChallengeTodoDto::from)
+                    .map(Stream::of)
+                    .orElse(Stream.empty());
+        } catch (Exception e) {
+            System.err.println("Error creating CompletedChallengeTodoStream for participation: " + participation.getId() + ", Error: " + e.getMessage());
             return Stream.empty();
         }
     }
