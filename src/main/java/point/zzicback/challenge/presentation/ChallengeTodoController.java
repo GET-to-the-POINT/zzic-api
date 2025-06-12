@@ -26,7 +26,7 @@ public class ChallengeTodoController {
     private final MemberService memberService;
     private final ChallengeTodoPresentationMapper challengeTodoPresentationMapper;
 
-    @Operation(summary = "모든 챌린지 투두 조회", description = "사용자의 모든 챌린지 투두를 조회합니다.")
+    @Operation(summary = "현재 기간 챌린지 투두 조회", description = "현재 기간 내 사용자의 모든 챌린지 투두를 조회합니다. 기간이 지난 투두는 제외됩니다.")
     @ApiResponse(responseCode = "200", description = "챌린지 투두 목록 조회 성공")
     @GetMapping
     public Page<ChallengeTodoResponse> getAllChallengeTodos(@AuthenticationPrincipal MemberPrincipal principal,
@@ -39,7 +39,7 @@ public class ChallengeTodoController {
                 .map(challengeTodoPresentationMapper::toResponse);
     }
 
-    @Operation(summary = "미완료 챌린지 투두 조회", description = "사용자의 미완료 챌린지 투두만 조회합니다.")
+    @Operation(summary = "현재 기간 미완료 투두 조회", description = "현재 기간 내 사용자의 미완료 챌린지 투두만 조회합니다. 기간이 지난 투두는 제외됩니다.")
     @ApiResponse(responseCode = "200", description = "미완료 챌린지 투두 목록 조회 성공")
     @GetMapping("/uncompleted")
     public Page<ChallengeTodoResponse> getUncompletedChallengeTodos(@AuthenticationPrincipal MemberPrincipal principal,
