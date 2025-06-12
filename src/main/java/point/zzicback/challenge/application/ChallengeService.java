@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import point.zzicback.challenge.application.dto.command.CreateChallengeCommand;
 import point.zzicback.challenge.application.dto.command.UpdateChallengeCommand;
+import point.zzicback.challenge.application.dto.result.ChallengeDto;
 import point.zzicback.challenge.application.dto.result.ChallengeJoinedDto;
 import point.zzicback.challenge.domain.Challenge;
 import point.zzicback.challenge.domain.PeriodType;
@@ -51,6 +52,26 @@ public class ChallengeService {
     @Transactional(readOnly = true)
     public Page<Challenge> getChallenges(Pageable pageable) {
         return challengeRepository.findAll(pageable);
+    }
+
+    //참여 상태를 포함한 챌린지 목록 조회
+    @Transactional(readOnly = true)
+    public Page<ChallengeDto> getChallengesWithParticipation(Member member, Pageable pageable) {
+        Page<Challenge> challengePage = challengeRepository.findAll(pageable);
+        List<Long> participatedChallengeIds = challengeParticipationRepository.findByMemberAndJoinOutIsNull(member)
+                .stream()
+                .map(participation -> participation.getChallenge().getId())
+                .toList();
+        
+        return challengePage.map(challenge -> new ChallengeDto(
+                challenge.getId(),
+                challenge.getTitle(),
+                challenge.getDescription(),
+                challenge.getStartDate(),
+                challenge.getEndDate(),
+                challenge.getPeriodType(),
+                participatedChallengeIds.contains(challenge.getId())
+        ));
     }
 
     @Transactional(readOnly = true)
