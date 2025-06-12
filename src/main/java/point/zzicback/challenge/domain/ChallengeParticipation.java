@@ -22,10 +22,10 @@ public class ChallengeParticipation {
     @ManyToOne(fetch = FetchType.LAZY)
     private Challenge challenge;
 
+    private LocalDateTime joinedAt;
+
     @OneToMany(mappedBy = "challengeParticipation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChallengeTodo> challengeTodos = new ArrayList<>();
-
-    private LocalDateTime joinedAt;
 
     @Builder
     public ChallengeParticipation(Member member, Challenge challenge) {

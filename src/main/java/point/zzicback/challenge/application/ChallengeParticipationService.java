@@ -8,7 +8,6 @@ import point.zzicback.challenge.infrastructure.ChallengeParticipationRepository;
 import point.zzicback.challenge.infrastructure.ChallengeTodoRepository;
 import point.zzicback.member.domain.Member;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -34,16 +33,7 @@ public class ChallengeParticipationService {
                 .member(member)
                 .build();
 
-        participation = participationRepository.save(participation);
-        
-        // ChallengeTodo 직접 생성
-        ChallengeTodo challengeTodo = ChallengeTodo.builder()
-                .challengeParticipation(participation)
-                .targetDate(LocalDate.now())
-                .build();
-        challengeTodoRepository.save(challengeTodo);
-
-        return participation;
+        return participationRepository.save(participation);
     }
 
     // delete 탈퇴
@@ -52,12 +42,9 @@ public class ChallengeParticipationService {
                 .findByMemberAndChallenge_Id(member, challengeId)
                 .orElseThrow(() -> new IllegalArgumentException("참여하지 않은 챌린지입니다."));
 
-        // ChallengeTodo 먼저 삭제
-        ChallengeTodo todo = challengeTodoRepository.findByChallengeParticipation(participation)
-                .orElseThrow(() -> new IllegalStateException("챌린지 Todo를 찾을 수 없습니다."));
-        challengeTodoRepository.delete(todo);
+        challengeTodoRepository.findByChallengeParticipation(participation)
+                .ifPresent(challengeTodoRepository::delete);
 
-        // ChallengeParticipation 삭제
         participationRepository.delete(participation);
     }
 
