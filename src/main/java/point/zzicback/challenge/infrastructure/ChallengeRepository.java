@@ -20,4 +20,6 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     @Query(value = "SELECT DISTINCT c FROM Challenge c LEFT JOIN FETCH c.participations p LEFT JOIN FETCH p.member",
            countQuery = "SELECT COUNT(DISTINCT c) FROM Challenge c")
     Page<Challenge> findAllWithParticipations(Pageable pageable);
+
+    Page<Challenge> findAll(Pageable pageable);
 }

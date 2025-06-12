@@ -1,8 +1,7 @@
 package point.zzicback.challenge.application;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import point.zzicback.challenge.application.dto.command.CreateChallengeCommand;
@@ -73,6 +72,25 @@ public class ChallengeService {
                         participatedChallengeIds.contains(challenge.getId())
                 ))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ChallengeJoinedDto> getChallengesByMember(Member member, Pageable pageable) {
+        Page<Challenge> challengePage = challengeRepository.findAll(pageable);
+        List<Long> participatedChallengeIds = challengeParticipationRepository.findByMember(member)
+                .stream()
+                .map(participation -> participation.getChallenge().getId())
+                .toList();
+        
+        return challengePage.map(challenge -> new ChallengeJoinedDto(
+                challenge.getId(),
+                challenge.getTitle(),
+                challenge.getDescription(),
+                challenge.getStartDate(),
+                challenge.getEndDate(),
+                challenge.getPeriodType(),
+                participatedChallengeIds.contains(challenge.getId())
+        ));
     }
 
     @Transactional(readOnly = true)

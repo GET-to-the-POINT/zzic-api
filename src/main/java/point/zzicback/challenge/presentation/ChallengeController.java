@@ -18,8 +18,6 @@ import point.zzicback.challenge.presentation.mapper.ChallengePresentationMapper;
 import point.zzicback.member.application.MemberService;
 import point.zzicback.member.domain.Member;
 
-import java.util.List;
-
 @Tag(name = "챌린지", description = "챌린지 관련 API")
 @RestController
 @RequiredArgsConstructor
@@ -57,10 +55,7 @@ public class ChallengeController {
                                                           @RequestParam(defaultValue = "id,desc") String sort) {
         Pageable pageable = createPageable(page, size, sort);
         Member member = memberService.findVerifiedMember(principal.id());
-        List<ChallengeJoinedDto> challenges = challengeService.getChallengesByMember(member);
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), challenges.size());
-        return new PageImpl<>(challenges.subList(start, end), pageable, challenges.size());
+        return challengeService.getChallengesByMember(member, pageable);
     }
 
     @Operation(summary = "챌린지 상세 조회", description = "특정 챌린지의 상세 정보를 조회합니다.")
