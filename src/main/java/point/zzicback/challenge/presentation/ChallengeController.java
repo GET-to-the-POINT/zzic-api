@@ -7,7 +7,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import point.zzicback.auth.domain.MemberPrincipal;
 import point.zzicback.challenge.application.ChallengeService;
@@ -25,7 +24,6 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/challenges")
-@Transactional
 public class ChallengeController {
     
     private final ChallengeService challengeService;
@@ -43,33 +41,21 @@ public class ChallengeController {
     @Operation(summary = "모든 챌린지 조회", description = "등록된 모든 챌린지를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "챌린지 목록 조회 성공")
     @GetMapping
-    @Transactional(readOnly = true)
     public Page<ChallengeDto> getChallenges(@RequestParam(defaultValue = "0") int page,
                                            @RequestParam(defaultValue = "10") int size,
                                            @RequestParam(defaultValue = "id,desc") String sort) {
-        String[] sortParams = sort.split(",");
-        String sortBy = sortParams[0];
-        Sort.Direction direction = sortParams.length > 1 && "desc".equalsIgnoreCase(sortParams[1])
-                ? Sort.Direction.DESC
-                : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        Pageable pageable = createPageable(page, size, sort);
         return challengeService.getChallenges(pageable).map(challengePresentationMapper::toDto);
     }
 
     @Operation(summary = "사용자별 챌린지 조회", description = "사용자의 참여 여부를 포함한 챌린지 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "사용자 챌린지 목록 조회 성공")
     @GetMapping("/by-member")
-    @Transactional(readOnly = true)
     public Page<ChallengeJoinedDto> getChallengesByMember(@AuthenticationPrincipal MemberPrincipal principal,
                                                           @RequestParam(defaultValue = "0") int page,
                                                           @RequestParam(defaultValue = "10") int size,
                                                           @RequestParam(defaultValue = "id,desc") String sort) {
-        String[] sortParams = sort.split(",");
-        String sortBy = sortParams[0];
-        Sort.Direction direction = sortParams.length > 1 && "desc".equalsIgnoreCase(sortParams[1])
-                ? Sort.Direction.DESC
-                : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        Pageable pageable = createPageable(page, size, sort);
         Member member = memberService.findVerifiedMember(principal.id());
         List<ChallengeJoinedDto> challenges = challengeService.getChallengesByMember(member);
         int start = (int) pageable.getOffset();
@@ -81,7 +67,6 @@ public class ChallengeController {
     @ApiResponse(responseCode = "200", description = "챌린지 상세 조회 성공")
     @ApiResponse(responseCode = "404", description = "챌린지를 찾을 수 없음")
     @GetMapping("/{challengeId}")
-    @Transactional(readOnly = true)
     public ChallengeDto getChallenge(@PathVariable Long challengeId) {
         Challenge challenge = challengeService.getChallenge(challengeId);
         return challengePresentationMapper.toDto(challenge);
@@ -106,16 +91,17 @@ public class ChallengeController {
     @Operation(summary = "모든 챌린지와 참여자 조회", description = "모든 챌린지와 각 챌린지별 참여자 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "챌린지 및 참여자 목록 조회 성공")
     @GetMapping("/with-participants")
-    @Transactional(readOnly = true)
     public Page<ChallengeDetailDto> getAllChallengesWithParticipants(@RequestParam(defaultValue = "0") int page,
                                                                     @RequestParam(defaultValue = "10") int size,
                                                                     @RequestParam(defaultValue = "id,desc") String sort) {
-        String[] sortParams = sort.split(",");
-        String sortBy = sortParams[0];
-        Sort.Direction direction = sortParams.length > 1 && "desc".equalsIgnoreCase(sortParams[1])
-                ? Sort.Direction.DESC
-                : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        Pageable pageable = createPageable(page, size, sort);
         return challengeService.getAllChallengesWithParticipants(pageable).map(challengePresentationMapper::toDetailDto);
+    }
+
+    private Pageable createPageable(int page, int size, String sort) {
+        String[] sortParams = sort.split(",");
+        String property = sortParams[0];
+        String direction = sortParams.length > 1 ? sortParams[1] : "desc";
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(direction), property));
     }
 }
