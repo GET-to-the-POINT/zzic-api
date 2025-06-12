@@ -58,7 +58,7 @@ public class ChallengeTodoService {
         challengeService.findById(challengeId);
 
         ChallengeParticipation participation = participationRepository
-                .findByMemberAndChallenge_Id(member, challengeId)
+                .findByMemberAndChallenge_IdAndJoinOutIsNull(member, challengeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 챌린지에 참여하지 않았습니다."));
 
         ChallengeTodo challengeTodo;
@@ -87,7 +87,7 @@ public class ChallengeTodoService {
     
     @Transactional(readOnly = true)
     public List<ChallengeTodoDto> getAllChallengeTodos(Member member) {
-        List<ChallengeParticipation> participations = participationRepository.findByMember(member);
+        List<ChallengeParticipation> participations = participationRepository.findByMemberAndJoinOutIsNull(member);
 
         return participations.stream()
                 .flatMap(this::createChallengeTodoStream)
@@ -106,7 +106,7 @@ public class ChallengeTodoService {
  
     @Transactional(readOnly = true)
     public List<ChallengeTodoDto> getUncompletedChallengeTodos(Member member) {
-        List<ChallengeParticipation> participations = participationRepository.findByMember(member);
+        List<ChallengeParticipation> participations = participationRepository.findByMemberAndJoinOutIsNull(member);
 
         return participations.stream()
                 .flatMap(this::createUncompletedChallengeTodoStream)
@@ -125,7 +125,7 @@ public class ChallengeTodoService {
 
     @Transactional(readOnly = true)
     public List<ChallengeTodoDto> getCompletedChallengeTodos(Member member) {
-        List<ChallengeParticipation> participations = participationRepository.findByMember(member);
+        List<ChallengeParticipation> participations = participationRepository.findByMemberAndJoinOutIsNull(member);
 
         return participations.stream()
                 .flatMap(this::createCompletedChallengeTodoStream)
@@ -264,7 +264,7 @@ public class ChallengeTodoService {
         challengeService.findById(challengeId);
 
         ChallengeParticipation participation = participationRepository
-                .findByMemberAndChallenge_Id(member, challengeId)
+                .findByMemberAndChallenge_IdAndJoinOutIsNull(member, challengeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 챌린지에 참여하지 않았습니다."));
         
         completeChallenge(participation, currentDate);

@@ -24,7 +24,7 @@ public class ChallengeParticipationService {
     public ChallengeParticipation joinChallenge(Long challengeId, Member member) {
         Challenge challenge = challengeService.findById(challengeId);
 
-        if (participationRepository.existsByMemberAndChallenge_Id(member, challengeId)) {
+        if (participationRepository.existsByMemberAndChallenge_IdAndJoinOutIsNull(member, challengeId)) {
             throw new IllegalStateException("이미 참여중인 챌린지입니다.");
         }
 
@@ -36,21 +36,19 @@ public class ChallengeParticipationService {
         return participationRepository.save(participation);
     }
 
-    // delete 탈퇴
+    // 중도하차 (soft delete)
     public void leaveChallenge(Long challengeId, Member member) {
         ChallengeParticipation participation = participationRepository
-                .findByMemberAndChallenge_Id(member, challengeId)
+                .findByMemberAndChallenge_IdAndJoinOutIsNull(member, challengeId)
                 .orElseThrow(() -> new IllegalArgumentException("참여하지 않은 챌린지입니다."));
 
-        challengeTodoRepository.findByChallengeParticipation(participation)
-                .ifPresent(challengeTodoRepository::delete);
-
-        participationRepository.delete(participation);
+        participation.leaveChallenge();
+        participationRepository.save(participation);
     }
 
     // 참여자가 챌린지 간격에 의해 해야할 챌린지 투두를 출력
     public List<ChallengeTodo> getChallengeTodos(Member member) {
-        return participationRepository.findByMember(member)
+        return participationRepository.findByMemberAndJoinOutIsNull(member)
                 .stream()
                 .map(participation -> challengeTodoRepository.findByChallengeParticipation(participation))
                 .filter(Optional::isPresent)

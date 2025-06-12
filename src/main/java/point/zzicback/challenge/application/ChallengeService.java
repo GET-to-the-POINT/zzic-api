@@ -56,7 +56,7 @@ public class ChallengeService {
     @Transactional(readOnly = true)
     public List<ChallengeJoinedDto> getChallengesByMember(Member member) {
         List<Challenge> allChallenges = challengeRepository.findAll();
-        List<Long> participatedChallengeIds = challengeParticipationRepository.findByMember(member)
+        List<Long> participatedChallengeIds = challengeParticipationRepository.findByMemberAndJoinOutIsNull(member)
                 .stream()
                 .map(participation -> participation.getChallenge().getId())
                 .toList();
@@ -77,7 +77,7 @@ public class ChallengeService {
     @Transactional(readOnly = true)
     public Page<ChallengeJoinedDto> getChallengesByMember(Member member, Pageable pageable) {
         Page<Challenge> challengePage = challengeRepository.findAll(pageable);
-        List<Long> participatedChallengeIds = challengeParticipationRepository.findByMember(member)
+        List<Long> participatedChallengeIds = challengeParticipationRepository.findByMemberAndJoinOutIsNull(member)
                 .stream()
                 .map(participation -> participation.getChallenge().getId())
                 .toList();

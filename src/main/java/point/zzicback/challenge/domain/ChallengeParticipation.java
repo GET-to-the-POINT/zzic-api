@@ -24,6 +24,8 @@ public class ChallengeParticipation {
 
     private LocalDateTime joinedAt;
 
+    private LocalDateTime joinOut;
+
     @OneToMany(mappedBy = "challengeParticipation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChallengeTodo> challengeTodos = new ArrayList<>();
 
@@ -36,5 +38,17 @@ public class ChallengeParticipation {
     @PrePersist
     private void prePersist() {
         joinedAt = LocalDateTime.now();
+    }
+
+    public void leaveChallenge() {
+        this.joinOut = LocalDateTime.now();
+    }
+
+    public boolean isActive() {
+        return joinOut == null;
+    }
+
+    public boolean hasLeftChallenge() {
+        return joinOut != null;
     }
 }
