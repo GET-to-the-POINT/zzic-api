@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +15,6 @@ import point.zzicback.member.application.MemberService;
 import point.zzicback.member.domain.Member;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @Tag(name = "챌린지 투두", description = "챌린지 투두 관련 API")
 @RestController
@@ -29,25 +29,37 @@ public class ChallengeTodoController {
     @Operation(summary = "모든 챌린지 투두 조회", description = "사용자의 모든 챌린지 투두를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "챌린지 투두 목록 조회 성공")
     @GetMapping
-    public List<ChallengeTodoDto> getAllChallengeTodos(@AuthenticationPrincipal MemberPrincipal principal) {
+    public Page<ChallengeTodoDto> getAllChallengeTodos(@AuthenticationPrincipal MemberPrincipal principal,
+                                                       @RequestParam(defaultValue = "0") int page,
+                                                       @RequestParam(defaultValue = "10") int size,
+                                                       @RequestParam(defaultValue = "id,desc") String sort) {
         Member member = memberService.findVerifiedMember(principal.id());
-        return challengeTodoService.getAllChallengeTodos(member);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sort.split(",")[1]), sort.split(",")[0]));
+        return challengeTodoService.getAllChallengeTodos(member, pageable);
     }
 
     @Operation(summary = "미완료 챌린지 투두 조회", description = "사용자의 미완료 챌린지 투두만 조회합니다.")
     @ApiResponse(responseCode = "200", description = "미완료 챌린지 투두 목록 조회 성공")
     @GetMapping("/uncompleted")
-    public List<ChallengeTodoDto> getUncompletedChallengeTodos(@AuthenticationPrincipal MemberPrincipal principal) {
+    public Page<ChallengeTodoDto> getUncompletedChallengeTodos(@AuthenticationPrincipal MemberPrincipal principal,
+                                                               @RequestParam(defaultValue = "0") int page,
+                                                               @RequestParam(defaultValue = "10") int size,
+                                                               @RequestParam(defaultValue = "id,desc") String sort) {
         Member member = memberService.findVerifiedMember(principal.id());
-        return challengeTodoService.getUncompletedChallengeTodos(member);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sort.split(",")[1]), sort.split(",")[0]));
+        return challengeTodoService.getUncompletedChallengeTodos(member, pageable);
     }
 
     @Operation(summary = "완료된 챌린지 투두 조회", description = "사용자의 완료된 챌린지 투두만 조회합니다.")
     @ApiResponse(responseCode = "200", description = "완료된 챌린지 투두 목록 조회 성공")
     @GetMapping("/completed")
-    public List<ChallengeTodoDto> getCompletedChallengeTodos(@AuthenticationPrincipal MemberPrincipal principal) {
+    public Page<ChallengeTodoDto> getCompletedChallengeTodos(@AuthenticationPrincipal MemberPrincipal principal,
+                                                             @RequestParam(defaultValue = "0") int page,
+                                                             @RequestParam(defaultValue = "10") int size,
+                                                             @RequestParam(defaultValue = "id,desc") String sort) {
         Member member = memberService.findVerifiedMember(principal.id());
-        return challengeTodoService.getCompletedChallengeTodos(member);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sort.split(",")[1]), sort.split(",")[0]));
+        return challengeTodoService.getCompletedChallengeTodos(member, pageable);
     }
 
     @Operation(summary = "챌린지 완료 처리", description = "특정 챌린지를 완료 처리합니다.")

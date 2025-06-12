@@ -1,6 +1,7 @@
 package point.zzicback.challenge.application;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import point.zzicback.challenge.domain.*;
@@ -13,6 +14,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -78,6 +80,17 @@ public class ChallengeTodoService {
                 .flatMap(this::createChallengeTodoStream)
                 .toList();
     }
+
+    // 챌린지 참여자가 해야 할 챌린지 투두를 페이지네이션으로 조회
+    @Transactional(readOnly = true)
+    public Page<ChallengeTodoDto> getAllChallengeTodos(Member member, Pageable pageable) {
+        List<ChallengeTodoDto> allTodos = getAllChallengeTodos(member);
+        allTodos = applySorting(allTodos, pageable.getSort());
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), allTodos.size());
+        List<ChallengeTodoDto> pagedTodos = allTodos.subList(start, end);
+        return new PageImpl<>(pagedTodos, pageable, allTodos.size());
+    }
  
     // 챌린지 참여자가 완료되지 않은 챌린지 투두를 모두 조회
     @Transactional(readOnly = true)
@@ -89,6 +102,17 @@ public class ChallengeTodoService {
                 .toList();
     }
 
+    // 챌린지 참여자가 완료되지 않은 챌린지 투두를 페이지네이션으로 조회
+    @Transactional(readOnly = true)
+    public Page<ChallengeTodoDto> getUncompletedChallengeTodos(Member member, Pageable pageable) {
+        List<ChallengeTodoDto> allTodos = getUncompletedChallengeTodos(member);
+        allTodos = applySorting(allTodos, pageable.getSort());
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), allTodos.size());
+        List<ChallengeTodoDto> pagedTodos = allTodos.subList(start, end);
+        return new PageImpl<>(pagedTodos, pageable, allTodos.size());
+    }
+
     // 챌린지 참여자가 완료된 챌린지 투두를 모두 조회
     @Transactional(readOnly = true)
     public List<ChallengeTodoDto> getCompletedChallengeTodos(Member member) {
@@ -97,6 +121,17 @@ public class ChallengeTodoService {
         return participations.stream()
                 .flatMap(this::createCompletedChallengeTodoStream)
                 .toList();
+    }
+
+    // 챌린지 참여자가 완료된 챌린지 투두를 페이지네이션으로 조회
+    @Transactional(readOnly = true)
+    public Page<ChallengeTodoDto> getCompletedChallengeTodos(Member member, Pageable pageable) {
+        List<ChallengeTodoDto> allTodos = getCompletedChallengeTodos(member);
+        allTodos = applySorting(allTodos, pageable.getSort()); //메모리정렬
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), allTodos.size());
+        List<ChallengeTodoDto> pagedTodos = allTodos.subList(start, end);
+        return new PageImpl<>(pagedTodos, pageable, allTodos.size());
     }
 
     private Stream<ChallengeTodoDto> createChallengeTodoStream(ChallengeParticipation participation) {
@@ -189,5 +224,37 @@ public class ChallengeTodoService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 챌린지에 참여하지 않았습니다."));
         
         completeChallenge(participation, currentDate);
+    }
+
+    private List<ChallengeTodoDto> applySorting(List<ChallengeTodoDto> todos, Sort sort) {
+        if (sort.isEmpty()) return todos;
+        
+        Comparator<ChallengeTodoDto> finalComparator = null;
+        
+        for (Sort.Order order : sort) {
+            Comparator<ChallengeTodoDto> currentComparator = getComparatorByProperty(order.getProperty());
+            
+            if (order.isDescending()) {
+                currentComparator = currentComparator.reversed();
+            }
+            
+            finalComparator = (finalComparator == null) 
+                ? currentComparator 
+                : finalComparator.thenComparing(currentComparator);
+        }
+        
+        return todos.stream()
+                .sorted(finalComparator != null ? finalComparator : Comparator.comparing(ChallengeTodoDto::id))
+                .toList();
+    }
+
+    private Comparator<ChallengeTodoDto> getComparatorByProperty(String property) {
+        return switch (property) {
+            case "challengeTitle" -> Comparator.comparing(ChallengeTodoDto::challengeTitle);
+            case "startDate" -> Comparator.comparing(ChallengeTodoDto::startDate);  
+            case "endDate" -> Comparator.comparing(ChallengeTodoDto::endDate);
+            case "periodType" -> Comparator.comparing(ChallengeTodoDto::periodType);
+            default -> Comparator.comparing(ChallengeTodoDto::id);
+        };
     }
 }
