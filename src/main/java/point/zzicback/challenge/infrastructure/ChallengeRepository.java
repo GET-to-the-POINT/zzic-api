@@ -10,10 +10,6 @@ import java.util.List;
 
 public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 
-    /**
-     * 모든 챌린지와 참여자 정보를 함께 조회
-     * N+1 문제를 방지하기 위해 fetch join 사용
-     */
     @Query("SELECT DISTINCT c FROM Challenge c LEFT JOIN FETCH c.participations p LEFT JOIN FETCH p.member")
     List<Challenge> findAllWithParticipations();
 
@@ -21,5 +17,6 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
            countQuery = "SELECT COUNT(DISTINCT c) FROM Challenge c")
     Page<Challenge> findAllWithParticipations(Pageable pageable);
 
-    Page<Challenge> findAll(Pageable pageable);
+    @Query("SELECT c FROM Challenge c WHERE c.title ILIKE %:keyword% OR c.description ILIKE %:keyword%")
+    Page<Challenge> searchByKeyword(String keyword, Pageable pageable);
 }

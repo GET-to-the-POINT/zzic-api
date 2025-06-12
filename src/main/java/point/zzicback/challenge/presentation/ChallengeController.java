@@ -36,20 +36,21 @@ public class ChallengeController {
         return CreateChallengeResponse.of(challengeId);
     }
 
-    @Operation(summary = "모든 챌린지 조회", description = "등록된 모든 챌린지를 조회합니다. 인증된 사용자의 경우 참여 여부가 포함됩니다.")
+    @Operation(summary = "모든 챌린지 조회", description = "등록된 모든 챌린지를 조회합니다. 인증된 사용자의 경우 참여 여부가 포함됩니다. search 파라미터로 제목과 설명에서 키워드 검색이 가능합니다.")
     @ApiResponse(responseCode = "200", description = "챌린지 목록 조회 성공")
     @GetMapping
     public Page<ChallengeDto> getChallenges(@AuthenticationPrincipal MemberPrincipal principal,
                                            @RequestParam(defaultValue = "0") int page,
                                            @RequestParam(defaultValue = "10") int size,
-                                           @RequestParam(defaultValue = "id,desc") String sort) {
+                                           @RequestParam(defaultValue = "id,desc") String sort,
+                                           @RequestParam(required = false) String search) {
         Pageable pageable = createPageable(page, size, sort);
         
         if (principal != null) {
             Member member = memberService.findVerifiedMember(principal.id());
-            return challengeService.getChallengesWithParticipation(member, pageable);
+            return challengeService.searchChallengesWithParticipation(member, search, pageable);
         } else {
-            return challengeService.getChallenges(pageable).map(challengePresentationMapper::toDto);
+            return challengeService.searchChallenges(search, pageable).map(challengePresentationMapper::toDto);
         }
     }
 
