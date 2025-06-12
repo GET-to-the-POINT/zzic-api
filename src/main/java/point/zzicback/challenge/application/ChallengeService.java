@@ -53,11 +53,15 @@ public class ChallengeService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Challenge> searchChallenges(String keyword, Pageable pageable) {
+    public Page<Challenge> searchChallenges(String keyword, String sort, Pageable pageable) {
         if (keyword == null || keyword.trim().isEmpty()) {
-            return challengeRepository.findAll(pageable);
+            return "popular".equals(sort) 
+                ? challengeRepository.findAllOrderedByPopularity(pageable)
+                : challengeRepository.findAll(pageable);
         }
-        return challengeRepository.searchByKeyword(keyword.trim(), pageable);
+        return "popular".equals(sort)
+            ? challengeRepository.searchByKeywordOrderedByPopularity(keyword.trim(), pageable)
+            : challengeRepository.searchByKeyword(keyword.trim(), pageable);
     }
 
     @Transactional(readOnly = true)
@@ -80,12 +84,16 @@ public class ChallengeService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ChallengeDto> searchChallengesWithParticipation(Member member, String keyword, Pageable pageable) {
+    public Page<ChallengeDto> searchChallengesWithParticipation(Member member, String keyword, String sort, Pageable pageable) {
         Page<Challenge> challengePage;
         if (keyword == null || keyword.trim().isEmpty()) {
-            challengePage = challengeRepository.findAll(pageable);
+            challengePage = "popular".equals(sort)
+                ? challengeRepository.findAllOrderedByPopularity(pageable)
+                : challengeRepository.findAll(pageable);
         } else {
-            challengePage = challengeRepository.searchByKeyword(keyword.trim(), pageable);
+            challengePage = "popular".equals(sort)
+                ? challengeRepository.searchByKeywordOrderedByPopularity(keyword.trim(), pageable)
+                : challengeRepository.searchByKeyword(keyword.trim(), pageable);
         }
         
         List<Long> participatedChallengeIds = challengeParticipationRepository.findByMemberAndJoinOutIsNull(member)
@@ -102,6 +110,43 @@ public class ChallengeService {
                 challenge.getPeriodType(),
                 participatedChallengeIds.contains(challenge.getId())
         ));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ChallengeDto> searchChallengesWithFilter(Member member, String keyword, String sort, Boolean join, Pageable pageable) {
+        Page<Challenge> challengePage;
+        if (keyword == null || keyword.trim().isEmpty()) {
+            challengePage = "popular".equals(sort)
+                ? challengeRepository.findAllOrderedByPopularity(pageable)
+                : challengeRepository.findAll(pageable);
+        } else {
+            challengePage = "popular".equals(sort)
+                ? challengeRepository.searchByKeywordOrderedByPopularity(keyword.trim(), pageable)
+                : challengeRepository.searchByKeyword(keyword.trim(), pageable);
+        }
+        
+        List<Long> participatedChallengeIds = challengeParticipationRepository.findByMemberAndJoinOutIsNull(member)
+                .stream()
+                .map(participation -> participation.getChallenge().getId())
+                .toList();
+        
+        List<ChallengeDto> filteredChallenges = challengePage.getContent().stream()
+                .map(challenge -> {
+                    boolean isParticipated = participatedChallengeIds.contains(challenge.getId());
+                    return new ChallengeDto(
+                            challenge.getId(),
+                            challenge.getTitle(),
+                            challenge.getDescription(),
+                            challenge.getStartDate(),
+                            challenge.getEndDate(),
+                            challenge.getPeriodType(),
+                            isParticipated
+                    );
+                })
+                .filter(challengeDto -> join == null || join.equals(challengeDto.participationStatus()))
+                .toList();
+        
+        return new PageImpl<>(filteredChallenges, pageable, filteredChallenges.size());
     }
 
     @Transactional(readOnly = true)

@@ -131,7 +131,7 @@ class ChallengeServiceTest {
 
         // when
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Challenge> challengePage = challengeService.searchChallenges("테스트", pageable);
+        Page<Challenge> challengePage = challengeService.searchChallenges("테스트", "id,desc", pageable);
 
         // then
         assertThat(challengePage.getContent()).hasSize(1);
@@ -153,7 +153,7 @@ class ChallengeServiceTest {
 
         // when
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Challenge> challengePage = challengeService.searchChallenges("운동", pageable);
+        Page<Challenge> challengePage = challengeService.searchChallenges("운동", "id,desc", pageable);
 
         // then
         assertThat(challengePage.getContent()).hasSize(1);
@@ -165,7 +165,7 @@ class ChallengeServiceTest {
     void searchChallenges_CaseInsensitive_Success() {
         // when
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Challenge> challengePage = challengeService.searchChallenges("테스트", pageable);
+        Page<Challenge> challengePage = challengeService.searchChallenges("테스트", "id,desc", pageable);
 
         // then
         assertThat(challengePage.getContent()).hasSize(1);
@@ -177,7 +177,7 @@ class ChallengeServiceTest {
     void searchChallenges_NullKeyword_ReturnsAll() {
         // when
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Challenge> challengePage = challengeService.searchChallenges(null, pageable);
+        Page<Challenge> challengePage = challengeService.searchChallenges(null, "id,desc", pageable);
 
         // then
         assertThat(challengePage.getContent()).hasSize(1);
