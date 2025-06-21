@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import point.zzicback.todo.application.dto.query.*;
 import point.zzicback.todo.presentation.dto.*;
 import point.zzicback.todo.presentation.mapper.TodoPresentationMapper;
 
+import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -37,10 +39,26 @@ public class TodoController {
           @Parameter(description = "카테고리 ID 필터", example = "1")
           Long categoryId,
           @RequestParam(required = false)
-          @Parameter(description = "우선순위 필터 (0: 낮음, 1: 보통, 2: 높음)", 
+          @Parameter(description = "우선순위 필터 (0: 낮음, 1: 보통, 2: 높음)",
                      schema = @Schema(allowableValues = {"0", "1", "2"}),
                      example = "1")
           Integer priorityId,
+          @RequestParam(required = false)
+          @Parameter(
+              description = "검색 시작 시각",
+              example = "2024-01-01T00:00:00Z",
+              schema = @Schema(type = "string", format = "date-time")
+          )
+          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+          Instant startDate,
+          @RequestParam(required = false)
+          @Parameter(
+              description = "검색 종료 시각",
+              example = "2024-01-31T23:59:59Z",
+              schema = @Schema(type = "string", format = "date-time")
+          )
+          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+          Instant endDate,
           @RequestParam(required = false)
           @Parameter(description = "검색 키워드 (제목, 설명, 태그에서 검색)",
                      example = "영어")
@@ -51,7 +69,8 @@ public class TodoController {
           @RequestParam(defaultValue = "0") int page,
           @RequestParam(defaultValue = "10") int size) {
     Pageable pageable = PageRequest.of(page, size);
-    TodoListQuery query = TodoListQuery.of(principal.id(), statusId, categoryId, priorityId, keyword, hideStatusIds, pageable);
+    TodoListQuery query = TodoListQuery.of(principal.id(), statusId, categoryId,
+        priorityId, keyword, hideStatusIds, startDate, endDate, pageable);
     return todoService.getTodoList(query).map(todoPresentationMapper::toResponse);
   }
 
@@ -82,7 +101,7 @@ public class TodoController {
                         "status": "IN_PROGRESS",
                         "priority": 1,
                         "categoryId": 1,
-                        "dueDate": "2026-01-01",
+                        "dueDate": "2026-01-01T00:00:00Z",
                         "repeatType": "NONE",
                         "tags": ["영어", "학습"]
                       }
@@ -135,7 +154,7 @@ public class TodoController {
                         "statusId": 1,
                         "priorityId": 2,
                         "categoryId": 1,
-                        "dueDate": "2026-01-02",
+                        "dueDate": "2026-01-02T00:00:00Z",
                         "repeatType": "DAILY",
                         "tags": ["영어", "학습", "토익"]
                       }
