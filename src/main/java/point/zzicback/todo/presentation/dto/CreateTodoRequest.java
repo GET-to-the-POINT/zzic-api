@@ -5,7 +5,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 import point.zzicback.todo.domain.RepeatType;
 
-import java.time.LocalDate;
+import java.time.Instant;
 
 @Data
 @NoArgsConstructor
@@ -76,7 +76,7 @@ public class CreateTodoRequest {
         format = "date",
         pattern = "^\\d{4}-\\d{2}-\\d{2}$"
     )
-    private LocalDate dueDate;
+    private Instant dueDate;
     
     @Schema(
         description = "반복 유형", 
