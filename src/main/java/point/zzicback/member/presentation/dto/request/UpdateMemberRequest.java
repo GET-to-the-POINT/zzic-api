@@ -10,5 +10,9 @@ public record UpdateMemberRequest(
         @Schema(description = "회원 닉네임", example = "새로운닉네임")
         String nickname,
         @Schema(description = "소개글", example = "매일 조금씩 성장하는 것이 목표입니다.")
-        String introduction
+        String introduction,
+        @Schema(description = "지역", example = "Seoul")
+        String location,
+        @Schema(description = "타임존", example = "Asia/Seoul")
+        String timeZone
 ) {}
