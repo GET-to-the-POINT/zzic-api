@@ -29,8 +29,8 @@ public class TodoService {
     updateOverdueTodos();
     
     Page<Todo> todoPage;
-    
-    boolean hasFilters = query.statusId() != null || query.categoryId() != null || 
+
+    boolean hasFilters = query.statusId() != null || query.categoryId() != null ||
                         query.priorityId() != null || (query.keyword() != null && !query.keyword().trim().isEmpty());
     
     if (hasFilters) {
@@ -41,10 +41,12 @@ public class TodoService {
           query.priorityId(),
           query.keyword(),
           query.hideStatusIds(),
+          query.startDate(),
+          query.endDate(),
           query.pageable()
       );
     } else {
-      todoPage = todoRepository.findByMemberId(query.memberId(), query.hideStatusIds(), query.pageable());
+      todoPage = todoRepository.findByMemberId(query.memberId(), query.hideStatusIds(), query.startDate(), query.endDate(), query.pageable());
     }
 
     return todoPage.map(this::toTodoResult);

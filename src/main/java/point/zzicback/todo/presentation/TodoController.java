@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import point.zzicback.todo.application.dto.query.*;
 import point.zzicback.todo.presentation.dto.*;
 import point.zzicback.todo.presentation.mapper.TodoPresentationMapper;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -48,10 +50,18 @@ public class TodoController {
           @RequestParam(required = false)
           @Parameter(description = "숨길 상태 ID 목록", example = "1,2")
           List<Integer> hideStatusIds,
+          @RequestParam(defaultValue = "#{T(java.time.LocalDate).now()}")
+          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          @Parameter(description = "검색 시작 날짜", example = "2024-01-01")
+          LocalDate startDate,
+          @RequestParam(defaultValue = "#{T(java.time.LocalDate).now()}")
+          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          @Parameter(description = "검색 종료 날짜", example = "2024-01-31")
+          LocalDate endDate,
           @RequestParam(defaultValue = "0") int page,
           @RequestParam(defaultValue = "10") int size) {
     Pageable pageable = PageRequest.of(page, size);
-    TodoListQuery query = TodoListQuery.of(principal.id(), statusId, categoryId, priorityId, keyword, hideStatusIds, pageable);
+    TodoListQuery query = TodoListQuery.of(principal.id(), statusId, categoryId, priorityId, keyword, hideStatusIds, startDate, endDate, pageable);
     return todoService.getTodoList(query).map(todoPresentationMapper::toResponse);
   }
 

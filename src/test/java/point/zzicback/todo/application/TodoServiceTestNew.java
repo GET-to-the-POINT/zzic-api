@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.*;
+import java.time.LocalDate;
 import point.zzicback.common.error.EntityNotFoundException;
 import point.zzicback.member.application.MemberService;
 import point.zzicback.member.application.dto.command.CreateMemberCommand;
@@ -48,6 +49,7 @@ class TodoServiceTestNew {
                 .title("테스트 할일")
                 .description("테스트 설명")
                 .statusId(0)
+                .dueDate(LocalDate.now())
                 .member(testMember)
                 .build();
         todoRepository.save(testTodo);
@@ -108,7 +110,12 @@ class TodoServiceTestNew {
         todoService.createTodo(command);
 
         // then
-        Page<Todo> todos = todoRepository.findByMemberId(testMember.getId(), PageRequest.of(0, 10));
+        Page<Todo> todos = todoRepository.findByMemberId(
+                testMember.getId(),
+                null,
+                null,
+                null,
+                PageRequest.of(0, 10));
         assertThat(todos.getContent())
                 .filteredOn(todo -> todo.getTitle().equals("새로운 할일"))
                 .hasSize(1)
