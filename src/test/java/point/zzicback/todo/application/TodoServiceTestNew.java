@@ -42,7 +42,14 @@ class TodoServiceTestNew {
     @BeforeEach
     void setUp() {
         // 테스트용 회원 생성
-        CreateMemberCommand memberCommand = new CreateMemberCommand("test@example.com", "password", "nickname", null);
+        CreateMemberCommand memberCommand = new CreateMemberCommand(
+                "test@example.com",
+                "password",
+                "nickname",
+                null,
+                null,
+                null
+        );
         testMember = memberService.createMember(memberCommand);
 
         // 테스트용 Todo 생성

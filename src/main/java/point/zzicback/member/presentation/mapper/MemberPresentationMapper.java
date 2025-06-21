@@ -19,6 +19,8 @@ public interface MemberPresentationMapper {
     @Mapping(target = "memberId", source = "memberId")
     @Mapping(target = "nickname", source = "request.nickname")
     @Mapping(target = "introduction", source = "request.introduction")
+    @Mapping(target = "location", source = "request.location")
+    @Mapping(target = "timeZone", source = "request.timeZone")
     UpdateMemberCommand toCommand(UUID memberId, UpdateMemberRequest request);
 
     /** Domain Member -> Application MemberResult 변환 */

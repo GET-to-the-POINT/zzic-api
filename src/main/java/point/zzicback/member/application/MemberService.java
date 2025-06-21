@@ -28,6 +28,8 @@ public class MemberService {
         .password(command.password())
         .nickname(command.nickname())
         .introduction(command.introduction())
+        .location(command.location())
+        .timeZone(command.timeZone())
         .build();
     Member savedMember = memberRepository.save(member);
     
@@ -78,17 +80,37 @@ public class MemberService {
     if (command.hasIntroduction()) {
       member.setIntroduction(command.introduction());
     }
+    if (command.hasLocation()) {
+      member.setLocation(command.location());
+    }
+    if (command.hasTimeZone()) {
+      member.setTimeZone(command.timeZone());
+    }
   }
 
   @Transactional(readOnly = true)
   public Page<MemberResult> getMembers(Pageable pageable) {
     return memberRepository.findAll(pageable)
-            .map(member -> new MemberResult(member.getId(), member.getEmail(), member.getNickname(), member.getIntroduction()));
+            .map(member -> new MemberResult(
+                    member.getId(),
+                    member.getEmail(),
+                    member.getNickname(),
+                    member.getIntroduction(),
+                    member.getLocation(),
+                    member.getTimeZone()
+            ));
   }
 
   @Transactional(readOnly = true)
   public MemberResult getMember(UUID memberId) {
     var member = findByIdOrThrow(memberId);
-    return new MemberResult(member.getId(), member.getEmail(), member.getNickname(), member.getIntroduction());
+    return new MemberResult(
+            member.getId(),
+            member.getEmail(),
+            member.getNickname(),
+            member.getIntroduction(),
+            member.getLocation(),
+            member.getTimeZone()
+    );
   }
 }

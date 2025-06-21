@@ -111,6 +111,8 @@ public class AnonMemberInitializer implements ApplicationRunner {
           email,
           passwordEncoder.encode(password),
           nickname,
+          null,
+          null,
           null
       );
       Member member = memberService.createMember(command);
