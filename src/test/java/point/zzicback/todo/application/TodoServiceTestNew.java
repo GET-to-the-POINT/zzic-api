@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.*;
+import java.util.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import point.zzicback.common.error.EntityNotFoundException;
@@ -51,6 +52,7 @@ class TodoServiceTestNew {
                 .description("테스트 설명")
                 .statusId(0)
                 .dueDate(Instant.now().plus(1, ChronoUnit.DAYS))
+                .tags(Set.of("학습"))
                 .member(testMember)
                 .build();
         todoRepository.save(testTodo);
@@ -61,7 +63,17 @@ class TodoServiceTestNew {
     void getTodoListByStatus_Success() {
         // given
         Pageable pageable = PageRequest.of(0, 10, Sort.by("id").descending());
-        TodoListQuery query = TodoListQuery.of(testMember.getId(), 0, pageable);
+        TodoListQuery query = new TodoListQuery(
+                testMember.getId(),
+                List.of(0),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                pageable);
 
         // when
         Page<TodoResult> result = todoService.getTodoList(query);
@@ -77,11 +89,69 @@ class TodoServiceTestNew {
     }
 
     @Test
+    @DisplayName("Todo 목록 조회 성공 - 중복 statusIds 허용")
+    void getTodoListByDuplicateStatusIds_Success() {
+        // given
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("id").descending());
+        TodoListQuery query = new TodoListQuery(
+                testMember.getId(),
+                Arrays.asList(0, 0),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                pageable);
+
+        // when
+        Page<TodoResult> result = todoService.getTodoList(query);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Todo 목록 조회 성공 - 태그로 필터링")
+    void getTodoListByTag_Success() {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+        TodoListQuery query = new TodoListQuery(
+                testMember.getId(),
+                null,
+                null,
+                null,
+                List.of("학습"),
+                null,
+                null,
+                null,
+                null,
+                pageable);
+
+        // when
+        Page<TodoResult> result = todoService.getTodoList(query);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+    }
+
+    @Test
     @DisplayName("Todo 목록 조회 성공 - 전체 조회")
     void getTodoListAll_Success() {
         // given
         Pageable pageable = PageRequest.of(0, 10, Sort.by("id").descending());
-        TodoListQuery query = TodoListQuery.ofAll(testMember.getId(), pageable);
+        TodoListQuery query = new TodoListQuery(
+                testMember.getId(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                pageable);
 
         // when
         Page<TodoResult> result = todoService.getTodoList(query);
@@ -218,9 +288,17 @@ class TodoServiceTestNew {
         Pageable pageable = PageRequest.of(0, 10);
         Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
         Instant end = Instant.now().plus(3, ChronoUnit.DAYS);
-        TodoListQuery query = TodoListQuery.of(
-                testMember.getId(), null, null, null, null,
-                null, start, end, pageable);
+        TodoListQuery query = new TodoListQuery(
+                testMember.getId(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                start,
+                end,
+                pageable);
 
         // when
         Page<TodoResult> result = todoService.getTodoList(query);
@@ -230,9 +308,17 @@ class TodoServiceTestNew {
                 .hasSize(0);
 
         // adjust range to include first todo
-        query = TodoListQuery.of(
-                testMember.getId(), null, null, null, null,
-                null, Instant.now().minus(1, ChronoUnit.DAYS), Instant.now().plus(1, ChronoUnit.DAYS), pageable);
+        query = new TodoListQuery(
+                testMember.getId(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                Instant.now().minus(1, ChronoUnit.DAYS),
+                Instant.now().plus(1, ChronoUnit.DAYS),
+                pageable);
         result = todoService.getTodoList(query);
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().getFirst().title()).isEqualTo("테스트 할일");
