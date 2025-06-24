@@ -24,4 +24,10 @@ public class Member {
   private String password;
   @Column(length = 500)
   private String introduction;
+
+  @Column(length = 100)
+  private String location;
+
+  @Column(name = "time_zone", length = 50)
+  private String timeZone;
 }
