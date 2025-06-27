@@ -38,7 +38,7 @@ class CategoryServiceTest {
 
     @BeforeEach
     void setUp() {
-        CreateMemberCommand command = new CreateMemberCommand("test@example.com", "password", "tester", null);
+        CreateMemberCommand command = new CreateMemberCommand("test@example.com", "password", "tester", null, "Asia/Seoul", "ko_KR");
         testMember = memberService.createMember(command);
     }
 
